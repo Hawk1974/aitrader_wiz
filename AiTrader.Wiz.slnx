@@ -1,0 +1,11 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/AiTrader.Wiz.Core/AiTrader.Wiz.Core.csproj" />
+    <Project Path="src/AiTrader.Wiz/AiTrader.Wiz.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/AiTrader.Wiz.ContractTests/AiTrader.Wiz.ContractTests.csproj" />
+    <Project Path="tests/AiTrader.Wiz.IntegrationTests/AiTrader.Wiz.IntegrationTests.csproj" />
+    <Project Path="tests/AiTrader.Wiz.UnitTests/AiTrader.Wiz.UnitTests.csproj" />
+  </Folder>
+</Solution>

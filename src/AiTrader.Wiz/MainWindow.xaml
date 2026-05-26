@@ -1,0 +1,325 @@
+<Window x:Class="AiTrader.Wiz.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="AiTrader Wiz"
+        Height="900"
+        Width="1280"
+        WindowStartupLocation="CenterScreen">
+    <Grid Margin="12">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <TabControl x:Name="WizardTabs" Grid.Row="0">
+            <TabItem Header="1. Welcome">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="16">
+                        <TextBlock FontSize="24" FontWeight="Bold" Text="AiTrader Wiz"/>
+                        <TextBlock Margin="0,10,0,0" TextWrapping="Wrap"
+                                   Text="This wizard creates the client-specific YAML and Markdown files that another AI will use, together with the static AlTrader repo zip, to stand up AlTrader in paper mode."/>
+                        <TextBlock Margin="0,6,0,0" TextWrapping="Wrap"
+                                   Text="It does not install Hermes, does not stand up the backend, does not stand up the desktop, and does not enable live trading."/>
+
+                        <GroupBox Header="Client Identity" Margin="0,18,0,0">
+                            <Grid Margin="12">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="240"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Row="0" Grid.Column="0" Margin="0,0,8,8" VerticalAlignment="Center" Text="Client Name"/>
+                                <TextBox x:Name="ClientNameTextBox" Grid.Row="0" Grid.Column="1" Margin="0,0,0,8"/>
+                                <TextBlock Grid.Row="1" Grid.Column="0" Margin="0,0,8,8" VerticalAlignment="Center" Text="Main Contact Name"/>
+                                <TextBox x:Name="MainContactNameTextBox" Grid.Row="1" Grid.Column="1" Margin="0,0,0,8"/>
+                                <TextBlock Grid.Row="2" Grid.Column="0" Margin="0,0,8,8" VerticalAlignment="Center" Text="Main Contact Email"/>
+                                <TextBox x:Name="MainContactEmailTextBox" Grid.Row="2" Grid.Column="1" Margin="0,0,0,8"/>
+                                <TextBlock Grid.Row="3" Grid.Column="0" Margin="0,0,8,0" VerticalAlignment="Center" Text="Deployment Name"/>
+                                <TextBox x:Name="DeploymentNameTextBox" Grid.Row="3" Grid.Column="1"/>
+                            </Grid>
+                        </GroupBox>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <TabItem Header="2. Computers">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="16">
+                        <TextBlock FontSize="20" FontWeight="Bold" Text="Physical Computers"/>
+                        <StackPanel Orientation="Horizontal" Margin="0,12,0,0">
+                            <TextBlock VerticalAlignment="Center" Text="How many computers are involved?"/>
+                            <ComboBox x:Name="ComputerCountComboBox" Width="80" Margin="12,0,0,0" SelectionChanged="ComputerCountComboBox_OnSelectionChanged">
+                                <ComboBoxItem Content="1"/>
+                                <ComboBoxItem Content="2" IsSelected="True"/>
+                            </ComboBox>
+                        </StackPanel>
+
+                        <GroupBox Header="Computer 1" Margin="0,16,0,0">
+                            <Grid Margin="12">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="240"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Row="0" Grid.Column="0" Margin="0,0,8,8" VerticalAlignment="Center" Text="Label"/>
+                                <TextBox x:Name="Computer1LabelTextBox" Grid.Row="0" Grid.Column="1" Margin="0,0,0,8"/>
+                                <TextBlock Grid.Row="1" Grid.Column="0" Margin="0,0,8,8" VerticalAlignment="Center" Text="Operating System"/>
+                                <ComboBox x:Name="Computer1OsComboBox" Grid.Row="1" Grid.Column="1" Margin="0,0,0,8" SelectionChanged="ComputerOsComboBox_OnSelectionChanged"/>
+                                <CheckBox x:Name="Computer1WslCheckBox" Grid.Row="2" Grid.Column="1" Content="This Windows machine will also host a WSL backend target" Checked="WslCheckBox_OnChanged" Unchecked="WslCheckBox_OnChanged"/>
+                            </Grid>
+                        </GroupBox>
+
+                        <GroupBox x:Name="Computer2GroupBox" Header="Computer 2" Margin="0,16,0,0">
+                            <Grid Margin="12">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="240"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Row="0" Grid.Column="0" Margin="0,0,8,8" VerticalAlignment="Center" Text="Label"/>
+                                <TextBox x:Name="Computer2LabelTextBox" Grid.Row="0" Grid.Column="1" Margin="0,0,0,8"/>
+                                <TextBlock Grid.Row="1" Grid.Column="0" Margin="0,0,8,8" VerticalAlignment="Center" Text="Operating System"/>
+                                <ComboBox x:Name="Computer2OsComboBox" Grid.Row="1" Grid.Column="1" Margin="0,0,0,8" SelectionChanged="ComputerOsComboBox_OnSelectionChanged"/>
+                                <CheckBox x:Name="Computer2WslCheckBox" Grid.Row="2" Grid.Column="1" Content="This Windows machine will also host a WSL backend target" Checked="WslCheckBox_OnChanged" Unchecked="WslCheckBox_OnChanged"/>
+                            </Grid>
+                        </GroupBox>
+
+                        <Button Margin="0,16,0,0" Width="180" Height="32" Content="Derive Runtime Targets" Click="DeriveTargetsButton_OnClick"/>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <TabItem Header="3. Targets">
+                <DockPanel Margin="16">
+                    <TextBlock DockPanel.Dock="Top" FontSize="20" FontWeight="Bold" Text="Runtime Targets"/>
+                    <DataGrid x:Name="TargetsDataGrid" Margin="0,16,0,0" AutoGenerateColumns="False" CanUserAddRows="False">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Target" Binding="{Binding DisplayName}" IsReadOnly="True" Width="2*"/>
+                            <DataGridTextColumn Header="Kind" Binding="{Binding Kind}" IsReadOnly="True" Width="*"/>
+                            <DataGridCheckBoxColumn Header="Hermes Backend" Binding="{Binding HermesBackend}" Width="*"/>
+                            <DataGridCheckBoxColumn Header="Hermes Desktop" Binding="{Binding HermesDesktop}" Width="*"/>
+                            <DataGridCheckBoxColumn Header="LM Studio" Binding="{Binding LmStudio}" Width="*"/>
+                            <DataGridCheckBoxColumn Header="Primary Desktop" Binding="{Binding IsPrimaryDesktop}" Width="*"/>
+                            <DataGridCheckBoxColumn Header="Authoritative Backend" Binding="{Binding IsAuthoritativeBackend}" Width="*"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </DockPanel>
+            </TabItem>
+
+            <TabItem Header="4. Connectivity + Backend">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="16">
+                        <TextBlock FontSize="20" FontWeight="Bold" Text="Connectivity and Backend"/>
+                        <GroupBox Header="Connectivity" Margin="0,16,0,0">
+                            <Grid Margin="12">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="240"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Row="0" Grid.Column="0" Margin="0,0,8,8" VerticalAlignment="Center" Text="Tailnet Name"/>
+                                <TextBox x:Name="TailnetNameTextBox" Grid.Row="0" Grid.Column="1" Margin="0,0,0,8"/>
+                                <TextBlock Grid.Row="1" Grid.Column="0" Margin="0,0,8,8" VerticalAlignment="Center" Text="Backend Host or IP"/>
+                                <TextBox x:Name="BackendHostTextBox" Grid.Row="1" Grid.Column="1" Margin="0,0,0,8"/>
+                                <TextBlock Grid.Row="2" Grid.Column="0" Margin="0,0,8,8" VerticalAlignment="Center" Text="Desktop Host or IP"/>
+                                <TextBox x:Name="DesktopHostTextBox" Grid.Row="2" Grid.Column="1" Margin="0,0,0,8"/>
+                                <TextBlock Grid.Row="3" Grid.Column="0" Margin="0,0,8,8" VerticalAlignment="Center" Text="SSH Username"/>
+                                <TextBox x:Name="SshUserTextBox" Grid.Row="3" Grid.Column="1" Margin="0,0,0,8"/>
+                                <TextBlock Grid.Row="4" Grid.Column="0" Margin="0,0,8,8" VerticalAlignment="Center" Text="SSH Port"/>
+                                <TextBox x:Name="SshPortTextBox" Grid.Row="4" Grid.Column="1" Margin="0,0,0,8"/>
+                                <CheckBox x:Name="RequiresTailscaleCheckBox" Grid.Row="5" Grid.Column="1" Content="This deployment requires Tailscale between targets"/>
+                                <CheckBox x:Name="BootstrapCompleteCheckBox" Grid.Row="6" Grid.Column="1" Content="Bootstrap connectivity is already complete"/>
+                            </Grid>
+                        </GroupBox>
+                        <GroupBox Header="Backend Runtime Paths" Margin="0,16,0,0">
+                            <Grid Margin="12">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="240"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Row="0" Grid.Column="0" Margin="0,0,8,8" VerticalAlignment="Center" Text="Hermes Home"/>
+                                <TextBox x:Name="HermesHomeTextBox" Grid.Row="0" Grid.Column="1" Margin="0,0,0,8"/>
+                                <TextBlock Grid.Row="1" Grid.Column="0" Margin="0,0,8,8" VerticalAlignment="Center" Text="Repo Path"/>
+                                <TextBox x:Name="RepoPathTextBox" Grid.Row="1" Grid.Column="1" Margin="0,0,0,8"/>
+                                <TextBlock Grid.Row="2" Grid.Column="0" Margin="0,0,8,8" VerticalAlignment="Center" Text="Data Path"/>
+                                <TextBox x:Name="DataPathTextBox" Grid.Row="2" Grid.Column="1" Margin="0,0,0,8"/>
+                                <TextBlock Grid.Row="3" Grid.Column="0" Margin="0,0,8,8" VerticalAlignment="Center" Text="AlTrader Data Path"/>
+                                <TextBox x:Name="AlTraderDataPathTextBox" Grid.Row="3" Grid.Column="1" Margin="0,0,0,8"/>
+                                <TextBlock Grid.Row="4" Grid.Column="0" Margin="0,0,8,8" VerticalAlignment="Center" Text="Models Path"/>
+                                <TextBox x:Name="ModelsPathTextBox" Grid.Row="4" Grid.Column="1" Margin="0,0,0,8"/>
+                                <TextBlock Grid.Row="5" Grid.Column="0" Margin="0,0,8,8" VerticalAlignment="Center" Text="Logs Path"/>
+                                <TextBox x:Name="LogsPathTextBox" Grid.Row="5" Grid.Column="1" Margin="0,0,0,8"/>
+                                <TextBlock Grid.Row="6" Grid.Column="0" Margin="0,0,8,8" VerticalAlignment="Center" Text="Backups Path"/>
+                                <TextBox x:Name="BackupsPathTextBox" Grid.Row="6" Grid.Column="1" Margin="0,0,0,8"/>
+                                <TextBlock Grid.Row="7" Grid.Column="0" Margin="0,0,8,0" VerticalAlignment="Center" Text="Timezone"/>
+                                <TextBox x:Name="TimezoneTextBox" Grid.Row="7" Grid.Column="1"/>
+                            </Grid>
+                        </GroupBox>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <TabItem Header="5. Services">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="16">
+                        <TextBlock FontSize="20" FontWeight="Bold" Text="Service Configuration"/>
+                        <GroupBox Header="LM Studio" Margin="0,16,0,0">
+                            <Grid Margin="12">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="240"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Row="0" Grid.Column="0" Margin="0,0,8,8" VerticalAlignment="Center" Text="Base URL"/>
+                                <TextBox x:Name="LmStudioBaseUrlTextBox" Grid.Row="0" Grid.Column="1" Margin="0,0,0,8"/>
+                                <TextBlock Grid.Row="1" Grid.Column="0" Margin="0,0,8,0" VerticalAlignment="Center" Text="Model ID"/>
+                                <TextBox x:Name="LmStudioModelIdTextBox" Grid.Row="1" Grid.Column="1"/>
+                            </Grid>
+                        </GroupBox>
+
+                        <GroupBox Header="Alpaca Paper" Margin="0,16,0,0">
+                            <Grid Margin="12">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="240"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Row="0" Grid.Column="0" Margin="0,0,8,8" VerticalAlignment="Center" Text="Account Name"/>
+                                <TextBox x:Name="AlpacaPaperAccountTextBox" Grid.Row="0" Grid.Column="1" Margin="0,0,0,8"/>
+                                <TextBlock Grid.Row="1" Grid.Column="0" Margin="0,0,8,8" VerticalAlignment="Center" Text="API Key"/>
+                                <TextBox x:Name="AlpacaPaperApiKeyTextBox" Grid.Row="1" Grid.Column="1" Margin="0,0,0,8"/>
+                                <TextBlock Grid.Row="2" Grid.Column="0" Margin="0,0,8,8" VerticalAlignment="Center" Text="Secret Key"/>
+                                <TextBox x:Name="AlpacaPaperSecretTextBox" Grid.Row="2" Grid.Column="1" Margin="0,0,0,8"/>
+                                <TextBlock Grid.Row="3" Grid.Column="0" Margin="0,0,8,0" VerticalAlignment="Center" Text="Base URL"/>
+                                <TextBox x:Name="AlpacaPaperBaseUrlTextBox" Grid.Row="3" Grid.Column="1"/>
+                            </Grid>
+                        </GroupBox>
+
+                        <GroupBox Header="Telegram" Margin="0,16,0,0">
+                            <Grid Margin="12">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="240"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Row="0" Grid.Column="0" Margin="0,0,8,8" VerticalAlignment="Center" Text="Bot Token"/>
+                                <TextBox x:Name="TelegramBotTokenTextBox" Grid.Row="0" Grid.Column="1" Margin="0,0,0,8"/>
+                                <TextBlock Grid.Row="1" Grid.Column="0" Margin="0,0,8,0" VerticalAlignment="Center" Text="Chat ID"/>
+                                <TextBox x:Name="TelegramChatIdTextBox" Grid.Row="1" Grid.Column="1"/>
+                            </Grid>
+                        </GroupBox>
+
+                        <GroupBox Header="AgentMail" Margin="0,16,0,0">
+                            <Grid Margin="12">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="240"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Row="0" Grid.Column="0" Margin="0,0,8,8" VerticalAlignment="Center" Text="API Key"/>
+                                <TextBox x:Name="AgentMailApiKeyTextBox" Grid.Row="0" Grid.Column="1" Margin="0,0,0,8"/>
+                                <TextBlock Grid.Row="1" Grid.Column="0" Margin="0,0,8,8" VerticalAlignment="Center" Text="From ID"/>
+                                <TextBox x:Name="AgentMailFromIdTextBox" Grid.Row="1" Grid.Column="1" Margin="0,0,0,8"/>
+                                <TextBlock Grid.Row="2" Grid.Column="0" Margin="0,0,8,0" VerticalAlignment="Center" Text="Recipient Email"/>
+                                <TextBox x:Name="AgentMailRecipientTextBox" Grid.Row="2" Grid.Column="1"/>
+                            </Grid>
+                        </GroupBox>
+
+                        <GroupBox Header="Optional Alpaca Live" Margin="0,16,0,0">
+                            <Grid Margin="12">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="240"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <CheckBox x:Name="AlpacaLiveEnabledCheckBox" Grid.Row="0" Grid.Column="1" Margin="0,0,0,8" Content="Store and validate optional live credentials without enabling live trading"/>
+                                <TextBlock Grid.Row="1" Grid.Column="0" Margin="0,0,8,8" VerticalAlignment="Center" Text="API Key"/>
+                                <TextBox x:Name="AlpacaLiveApiKeyTextBox" Grid.Row="1" Grid.Column="1" Margin="0,0,0,8"/>
+                                <TextBlock Grid.Row="2" Grid.Column="0" Margin="0,0,8,8" VerticalAlignment="Center" Text="Secret Key"/>
+                                <TextBox x:Name="AlpacaLiveSecretTextBox" Grid.Row="2" Grid.Column="1" Margin="0,0,0,8"/>
+                                <TextBlock Grid.Row="3" Grid.Column="0" Margin="0,0,8,0" VerticalAlignment="Center" Text="Base URL"/>
+                                <TextBox x:Name="AlpacaLiveBaseUrlTextBox" Grid.Row="3" Grid.Column="1"/>
+                            </Grid>
+                        </GroupBox>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <TabItem Header="6. Review + Export">
+                <Grid Margin="16">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    <StackPanel Orientation="Horizontal">
+                        <Button Width="140" Height="32" Margin="0,0,10,0" Content="Save Draft" Click="SaveDraftButton_OnClick"/>
+                        <Button Width="140" Height="32" Margin="0,0,10,0" Content="Load Draft" Click="LoadDraftButton_OnClick"/>
+                        <Button Width="140" Height="32" Margin="0,0,10,0" Content="Wipe Draft" Click="WipeDraftButton_OnClick"/>
+                        <Button Width="160" Height="32" Margin="0,0,10,0" Content="Run Validations" Click="RunValidationsButton_OnClick"/>
+                        <Button Width="180" Height="32" Content="Export Overlay Zip" Click="ExportButton_OnClick"/>
+                    </StackPanel>
+                    <TextBlock Grid.Row="1" Margin="0,12,0,12" TextWrapping="Wrap"
+                               Text="Review the log below. The exported files are the AI overlay only. Hand those files plus the static AlTrader repo zip to the setup AI."/>
+                    <TextBox x:Name="LogTextBox" Grid.Row="2" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" TextWrapping="Wrap" AcceptsReturn="True" IsReadOnly="True"/>
+                </Grid>
+            </TabItem>
+        </TabControl>
+
+        <DockPanel Grid.Row="1" Margin="0,12,0,0">
+            <Button DockPanel.Dock="Right" x:Name="NextButton" Width="110" Height="34" Margin="12,0,0,0" Content="Next" Click="NextButton_OnClick"/>
+            <Button DockPanel.Dock="Right" x:Name="BackButton" Width="110" Height="34" Content="Back" Click="BackButton_OnClick"/>
+        </DockPanel>
+    </Grid>
+</Window>
