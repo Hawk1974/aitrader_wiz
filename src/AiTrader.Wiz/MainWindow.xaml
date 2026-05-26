@@ -1,7 +1,7 @@
 <Window x:Class="AiTrader.Wiz.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="AiTrader Wiz"
+        Title="AlTrader Config Wizard"
         Height="900"
         Width="1280"
         WindowStartupLocation="CenterScreen">
@@ -12,10 +12,45 @@
         </Grid.RowDefinitions>
 
         <TabControl x:Name="WizardTabs" Grid.Row="0">
+            <TabItem Header="0. Start Here">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="16">
+                        <TextBlock FontSize="28" FontWeight="Bold" Text="AlTrader Config Wizard"/>
+                        <TextBlock Margin="0,12,0,0" FontSize="16" TextWrapping="Wrap"
+                                   Text="Purpose: this tool helps a non-technical client produce the exact YAML and Markdown handoff files that a setup AI needs to stand up AlTrader." />
+                        <TextBlock Margin="0,8,0,0" TextWrapping="Wrap"
+                                   Text="This wizard does not install Hermes, does not configure the backend, does not configure the desktop, does not modify the AlTrader repo zip, and does not enable live trading." />
+                        <TextBlock Margin="0,8,0,0" TextWrapping="Wrap"
+                                   Text="When you finish, give the exported overlay files plus the static AlTrader repo zip to the setup AI. The setup AI will use the files from this wizard as the client-specific source of truth." />
+
+                        <GroupBox Header="What This Wizard Produces" Margin="0,20,0,0">
+                            <StackPanel Margin="12">
+                                <TextBlock TextWrapping="Wrap" Text="• CLIENT_INTAKE.yaml"/>
+                                <TextBlock TextWrapping="Wrap" Text="• CLIENT_SUMMARY.md"/>
+                                <TextBlock TextWrapping="Wrap" Text="• INSTRUCTION.md"/>
+                                <TextBlock TextWrapping="Wrap" Text="• VALIDATION_SUMMARY.md"/>
+                                <TextBlock TextWrapping="Wrap" Text="• SECRETS_STATUS.md"/>
+                                <TextBlock TextWrapping="Wrap" Text="• one TARGET_*.md file per runtime target"/>
+                            </StackPanel>
+                        </GroupBox>
+
+                        <GroupBox Header="Before You Begin" Margin="0,16,0,0">
+                            <StackPanel Margin="12">
+                                <TextBlock TextWrapping="Wrap" Text="• Know how many computers are involved and what operating system each one uses."/>
+                                <TextBlock TextWrapping="Wrap" Text="• Know which machine will host Hermes backend, Hermes Desktop, and LM Studio."/>
+                                <TextBlock TextWrapping="Wrap" Text="• Have Alpaca paper credentials ready."/>
+                                <TextBlock TextWrapping="Wrap" Text="• Have Telegram and AgentMail details ready if those services will be used."/>
+                                <TextBlock TextWrapping="Wrap" Text="• If the backend and desktop are on different machines, have connectivity details ready such as Tailscale and SSH information."/>
+                            </StackPanel>
+                        </GroupBox>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
             <TabItem Header="1. Welcome">
                 <ScrollViewer VerticalScrollBarVisibility="Auto">
                     <StackPanel Margin="16">
-                        <TextBlock FontSize="24" FontWeight="Bold" Text="AiTrader Wiz"/>
+                        <TextBlock FontSize="24" FontWeight="Bold" Text="Welcome"/>
                         <TextBlock Margin="0,10,0,0" TextWrapping="Wrap"
                                    Text="This wizard creates the client-specific YAML and Markdown files that another AI will use, together with the static AlTrader repo zip, to stand up AlTrader in paper mode."/>
                         <TextBlock Margin="0,6,0,0" TextWrapping="Wrap"
@@ -318,6 +353,7 @@
         </TabControl>
 
         <DockPanel Grid.Row="1" Margin="0,12,0,0">
+            <Button DockPanel.Dock="Left" x:Name="ExitButton" Width="120" Height="34" Content="Cancel / Exit" Click="ExitButton_OnClick"/>
             <Button DockPanel.Dock="Right" x:Name="NextButton" Width="110" Height="34" Margin="12,0,0,0" Content="Next" Click="NextButton_OnClick"/>
             <Button DockPanel.Dock="Right" x:Name="BackButton" Width="110" Height="34" Content="Back" Click="BackButton_OnClick"/>
         </DockPanel>

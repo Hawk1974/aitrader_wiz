@@ -3,6 +3,8 @@ using System.Net.Http;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Interop;
+using System.Windows.Media.Imaging;
 using Microsoft.Win32;
 
 using AiTrader.Wiz.Core;
@@ -17,14 +19,42 @@ public partial class MainWindow : Window
 
     public MainWindow()
     {
+        VerboseLogger.Info("MainWindow constructor entered.");
         InitializeComponent();
+        InitializeWindowIcon();
         TargetsDataGrid.ItemsSource = _targetRows;
         InitializeOsSelectors();
         LoadStateIntoControls();
+        AppendLog($"Verbose log file: {VerboseLogger.CurrentLogPath}");
+        VerboseLogger.Info("MainWindow constructor completed.");
+    }
+
+    private void InitializeWindowIcon()
+    {
+        var executablePath = Environment.ProcessPath;
+        if (string.IsNullOrWhiteSpace(executablePath))
+        {
+            VerboseLogger.Warn("Window icon initialization skipped because Environment.ProcessPath was empty.");
+            return;
+        }
+
+        using var icon = System.Drawing.Icon.ExtractAssociatedIcon(executablePath);
+        if (icon is null)
+        {
+            VerboseLogger.Warn($"Window icon initialization skipped because no associated icon was found for {executablePath}.");
+            return;
+        }
+
+        Icon = Imaging.CreateBitmapSourceFromHIcon(
+            icon.Handle,
+            Int32Rect.Empty,
+            BitmapSizeOptions.FromEmptyOptions());
+        VerboseLogger.Info($"Window icon loaded from executable association at {executablePath}.");
     }
 
     private void InitializeOsSelectors()
     {
+        VerboseLogger.Info("Initializing operating system selector sources.");
         var source = Enum.GetValues<OperatingSystemKind>().ToList();
         Computer1OsComboBox.ItemsSource = source;
         Computer2OsComboBox.ItemsSource = source;
@@ -32,6 +62,7 @@ public partial class MainWindow : Window
 
     private void LoadStateIntoControls()
     {
+        VerboseLogger.Info("Loading wizard state into UI controls.");
         ClientNameTextBox.Text = _state.ClientIdentity.ClientName;
         MainContactNameTextBox.Text = _state.ClientIdentity.MainContactName;
         MainContactEmailTextBox.Text = _state.ClientIdentity.MainContactEmail;
@@ -87,10 +118,13 @@ public partial class MainWindow : Window
 
         RebuildTargetRows();
         UpdateComputer2Visibility();
+        UpdateWslCheckboxVisibility();
+        VerboseLogger.Info("Wizard state loaded into UI controls.");
     }
 
     private void PopulateStateFromControls()
     {
+        VerboseLogger.Info("Populating wizard state from UI controls.");
         _state.ClientIdentity.ClientName = ClientNameTextBox.Text.Trim();
         _state.ClientIdentity.MainContactName = MainContactNameTextBox.Text.Trim();
         _state.ClientIdentity.MainContactEmail = MainContactEmailTextBox.Text.Trim();
@@ -131,10 +165,28 @@ public partial class MainWindow : Window
         _state.AlpacaLive.ApiKey = AlpacaLiveApiKeyTextBox.Text.Trim();
         _state.AlpacaLive.SecretKey = AlpacaLiveSecretTextBox.Text.Trim();
         _state.AlpacaLive.BaseUrl = AlpacaLiveBaseUrlTextBox.Text.Trim();
+        VerboseLogger.Info($"Wizard state populated. Computers={_state.Computers.Count}, Targets={_state.Targets.Count}, LiveEnabled={_state.AlpacaLive.Enabled}.");
     }
 
     private List<ComputerDefinition> BuildComputersFromControls()
     {
+        if (Computer1LabelTextBox is null ||
+            Computer1OsComboBox is null ||
+            Computer1WslCheckBox is null ||
+            ComputerCountComboBox is null)
+        {
+            VerboseLogger.Warn("BuildComputersFromControls invoked before primary controls were initialized. Falling back to current state.");
+            return _state.Computers
+                .Select(computer => new ComputerDefinition
+                {
+                    Id = computer.Id,
+                    Label = computer.Label,
+                    OperatingSystem = computer.OperatingSystem,
+                    UsesWslBackend = computer.UsesWslBackend,
+                })
+                .ToList();
+        }
+
         var results = new List<ComputerDefinition>
         {
             new()
@@ -148,6 +200,24 @@ public partial class MainWindow : Window
 
         if (ComputerCountComboBox.SelectedIndex == 1)
         {
+            if (Computer2LabelTextBox is null || Computer2OsComboBox is null || Computer2WslCheckBox is null)
+            {
+                VerboseLogger.Warn("Computer 2 was requested before its controls were initialized. Falling back to current secondary computer state.");
+                var existingComputer2 = _state.Computers.Skip(1).FirstOrDefault();
+                if (existingComputer2 is not null)
+                {
+                    results.Add(new ComputerDefinition
+                    {
+                        Id = existingComputer2.Id,
+                        Label = existingComputer2.Label,
+                        OperatingSystem = existingComputer2.OperatingSystem,
+                        UsesWslBackend = existingComputer2.UsesWslBackend,
+                    });
+                }
+
+                return results;
+            }
+
             results.Add(new ComputerDefinition
             {
                 Id = "computer_2",
@@ -162,6 +232,7 @@ public partial class MainWindow : Window
 
     private void RebuildTargetRows()
     {
+        VerboseLogger.Info("Rebuilding runtime target rows.");
         var currentSelections = _targetRows.ToDictionary(
             row => row.TargetId,
             row => row);
@@ -183,6 +254,7 @@ public partial class MainWindow : Window
                 IsAuthoritativeBackend = existing?.IsAuthoritativeBackend ?? false,
             });
         }
+        VerboseLogger.Info($"Runtime target rows rebuilt. Count={_targetRows.Count}.");
     }
 
     private List<RuntimeTarget> BuildTargetsFromRows()
@@ -209,20 +281,34 @@ public partial class MainWindow : Window
 
     private void ComputerCountComboBox_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
     {
+        VerboseLogger.Info($"Computer count changed. SelectedIndex={ComputerCountComboBox?.SelectedIndex}.");
         UpdateComputer2Visibility();
         RebuildTargetRows();
     }
 
     private void ComputerOsComboBox_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
     {
+        if (sender is ComboBox comboBox)
+        {
+            VerboseLogger.Info($"Operating system selection changed on {comboBox.Name}. SelectedItem={comboBox.SelectedItem ?? "<null>"}.");
+        }
         UpdateWslCheckboxVisibility();
         RebuildTargetRows();
     }
 
-    private void WslCheckBox_OnChanged(object sender, RoutedEventArgs e) => RebuildTargetRows();
+    private void WslCheckBox_OnChanged(object sender, RoutedEventArgs e)
+    {
+        if (sender is CheckBox checkBox)
+        {
+            VerboseLogger.Info($"WSL backend checkbox changed on {checkBox.Name}. IsChecked={checkBox.IsChecked}.");
+        }
+
+        RebuildTargetRows();
+    }
 
     private void DeriveTargetsButton_OnClick(object sender, RoutedEventArgs e)
     {
+        VerboseLogger.Info("Derive Targets button clicked.");
         RebuildTargetRows();
         AppendLog("Runtime targets re-derived from the current computer selections.");
         WizardTabs.SelectedIndex = 2;
@@ -230,79 +316,137 @@ public partial class MainWindow : Window
 
     private async void RunValidationsButton_OnClick(object sender, RoutedEventArgs e)
     {
-        PopulateStateFromControls();
-        _state.ValidationResults.Clear();
-        _state.ValidationResults.Add(ValidationService.ClassifyTopology(_state));
-        _state.ValidationResults.Add(_validationService.ValidateConnectivity(_state.Connectivity));
-        _state.ValidationResults.Add(await _validationService.ValidateAlpacaPaperAsync(_state.AlpacaPaper));
-        _state.ValidationResults.Add(await _validationService.ValidateTelegramAsync(_state.Telegram));
-        _state.ValidationResults.Add(await _validationService.ValidateAgentMailAsync(_state.AgentMail));
-        _state.ValidationResults.Add(await _validationService.ValidateLmStudioAsync(_state.LmStudio));
-        _state.ValidationResults.Add(await _validationService.ValidateAlpacaLiveAsync(_state.AlpacaLive));
-
-        AppendLog("Validation results:");
-        foreach (var record in _state.ValidationResults)
+        VerboseLogger.Info("Run Validations button clicked.");
+        try
         {
-            AppendLog($"- {record.Key}: {record.Status} - {record.Message}");
+            PopulateStateFromControls();
+            _state.ValidationResults.Clear();
+            _state.ValidationResults.Add(ValidationService.ClassifyTopology(_state));
+            _state.ValidationResults.Add(_validationService.ValidateConnectivity(_state.Connectivity));
+            _state.ValidationResults.Add(await _validationService.ValidateAlpacaPaperAsync(_state.AlpacaPaper));
+            _state.ValidationResults.Add(await _validationService.ValidateTelegramAsync(_state.Telegram));
+            _state.ValidationResults.Add(await _validationService.ValidateAgentMailAsync(_state.AgentMail));
+            _state.ValidationResults.Add(await _validationService.ValidateLmStudioAsync(_state.LmStudio));
+            _state.ValidationResults.Add(await _validationService.ValidateAlpacaLiveAsync(_state.AlpacaLive));
+
+            AppendLog("Validation results:");
+            foreach (var record in _state.ValidationResults)
+            {
+                AppendLog($"- {record.Key}: {record.Status} - {record.Message}");
+                VerboseLogger.Info($"Validation result: {record.Key} => {record.Status} :: {record.Message}");
+            }
+        }
+        catch (Exception ex)
+        {
+            VerboseLogger.Error("Validation workflow failed.", ex);
+            AppendLog($"Validation failed: {ex.Message}");
+            throw;
         }
     }
 
     private void SaveDraftButton_OnClick(object sender, RoutedEventArgs e)
     {
-        PopulateStateFromControls();
-        DraftStorage.Save(_state);
-        AppendLog("Encrypted local draft saved.");
+        VerboseLogger.Info("Save Draft button clicked.");
+        try
+        {
+            PopulateStateFromControls();
+            DraftStorage.Save(_state);
+            AppendLog("Encrypted local draft saved.");
+            VerboseLogger.Info("Encrypted local draft saved successfully.");
+        }
+        catch (Exception ex)
+        {
+            VerboseLogger.Error("Failed to save encrypted draft.", ex);
+            AppendLog($"Draft save failed: {ex.Message}");
+            throw;
+        }
     }
 
     private void LoadDraftButton_OnClick(object sender, RoutedEventArgs e)
     {
-        var loaded = DraftStorage.Load();
-        if (loaded is null)
+        VerboseLogger.Info("Load Draft button clicked.");
+        try
         {
-            AppendLog("No saved draft was found.");
-            return;
-        }
+            var loaded = DraftStorage.Load();
+            if (loaded is null)
+            {
+                AppendLog("No saved draft was found.");
+                VerboseLogger.Warn("Load draft requested but no draft file exists.");
+                return;
+            }
 
-        _state = loaded;
-        LoadStateIntoControls();
-        AppendLog("Encrypted local draft loaded.");
+            _state = loaded;
+            LoadStateIntoControls();
+            AppendLog("Encrypted local draft loaded.");
+            VerboseLogger.Info("Encrypted local draft loaded successfully.");
+        }
+        catch (Exception ex)
+        {
+            VerboseLogger.Error("Failed to load encrypted draft.", ex);
+            AppendLog($"Draft load failed: {ex.Message}");
+            throw;
+        }
     }
 
     private void WipeDraftButton_OnClick(object sender, RoutedEventArgs e)
     {
-        DraftStorage.Wipe();
-        AppendLog("Local draft wiped.");
+        VerboseLogger.Info("Wipe Draft button clicked.");
+        try
+        {
+            DraftStorage.Wipe();
+            AppendLog("Local draft wiped.");
+            VerboseLogger.Info("Local draft wiped successfully.");
+        }
+        catch (Exception ex)
+        {
+            VerboseLogger.Error("Failed to wipe local draft.", ex);
+            AppendLog($"Draft wipe failed: {ex.Message}");
+            throw;
+        }
     }
 
     private void ExportButton_OnClick(object sender, RoutedEventArgs e)
     {
-        PopulateStateFromControls();
-        var topologyErrors = TopologyService.ValidateTopology(_state);
-        if (topologyErrors.Count > 0)
+        VerboseLogger.Info("Export button clicked.");
+        try
         {
-            AppendLog("Export blocked:");
-            foreach (var error in topologyErrors)
+            PopulateStateFromControls();
+            var topologyErrors = TopologyService.ValidateTopology(_state);
+            if (topologyErrors.Count > 0)
             {
-                AppendLog($"- {error}");
+                AppendLog("Export blocked:");
+                foreach (var error in topologyErrors)
+                {
+                    AppendLog($"- {error}");
+                    VerboseLogger.Warn($"Export blocked by topology error: {error}");
+                }
+                return;
             }
-            return;
+
+            var dialog = new SaveFileDialog
+            {
+                Title = "Export AI overlay zip",
+                FileName = "AiTraderWiz_Overlay.zip",
+                Filter = "Zip Files (*.zip)|*.zip",
+                DefaultExt = ".zip",
+            };
+
+            if (dialog.ShowDialog(this) != true)
+            {
+                VerboseLogger.Info("Export dialog cancelled by user.");
+                return;
+            }
+
+            ExportService.ExportOverlayZip(_state, dialog.FileName);
+            AppendLog($"Overlay files exported to: {dialog.FileName}");
+            VerboseLogger.Info($"Overlay zip exported successfully to {dialog.FileName}.");
         }
-
-        var dialog = new SaveFileDialog
+        catch (Exception ex)
         {
-            Title = "Export AI overlay zip",
-            FileName = "AiTraderWiz_Overlay.zip",
-            Filter = "Zip Files (*.zip)|*.zip",
-            DefaultExt = ".zip",
-        };
-
-        if (dialog.ShowDialog(this) != true)
-        {
-            return;
+            VerboseLogger.Error("Overlay export failed.", ex);
+            AppendLog($"Export failed: {ex.Message}");
+            throw;
         }
-
-        ExportService.ExportOverlayZip(_state, dialog.FileName);
-        AppendLog($"Overlay files exported to: {dialog.FileName}");
     }
 
     private void BackButton_OnClick(object sender, RoutedEventArgs e)
@@ -310,6 +454,7 @@ public partial class MainWindow : Window
         if (WizardTabs.SelectedIndex > 0)
         {
             WizardTabs.SelectedIndex -= 1;
+            VerboseLogger.Info($"Navigated back to wizard tab index {WizardTabs.SelectedIndex}.");
         }
     }
 
@@ -318,22 +463,63 @@ public partial class MainWindow : Window
         if (WizardTabs.SelectedIndex < WizardTabs.Items.Count - 1)
         {
             WizardTabs.SelectedIndex += 1;
+            VerboseLogger.Info($"Navigated forward to wizard tab index {WizardTabs.SelectedIndex}.");
         }
+    }
+
+    private void ExitButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        VerboseLogger.Info("Cancel / Exit button clicked.");
+        var result = MessageBox.Show(
+            "Exit AlTrader Config Wizard without exporting files for the setup AI?",
+            "Exit AlTrader Config Wizard",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Question);
+
+        if (result != MessageBoxResult.Yes)
+        {
+            VerboseLogger.Info("Exit was cancelled by the user.");
+            AppendLog("Exit cancelled. The wizard remains open.");
+            return;
+        }
+
+        VerboseLogger.Warn("Application exit confirmed before overlay export.");
+        AppendLog("Exiting without exporting overlay files.");
+        Close();
     }
 
     private void UpdateComputer2Visibility()
     {
+        if (Computer2GroupBox is null || ComputerCountComboBox is null)
+        {
+            VerboseLogger.Warn("Skipped Computer 2 visibility update because controls are not initialized yet.");
+            return;
+        }
+
         Computer2GroupBox.Visibility = ComputerCountComboBox.SelectedIndex == 1 ? Visibility.Visible : Visibility.Collapsed;
+        VerboseLogger.Info($"Computer 2 visibility updated to {Computer2GroupBox.Visibility}.");
     }
 
     private void UpdateWslCheckboxVisibility()
     {
+        if (Computer1WslCheckBox is null || Computer1OsComboBox is null || Computer2WslCheckBox is null || Computer2OsComboBox is null)
+        {
+            VerboseLogger.Warn("Skipped WSL checkbox visibility update because controls are not initialized yet.");
+            return;
+        }
+
         Computer1WslCheckBox.Visibility = Computer1OsComboBox.SelectedItem is OperatingSystemKind.Windows ? Visibility.Visible : Visibility.Collapsed;
         Computer2WslCheckBox.Visibility = Computer2OsComboBox.SelectedItem is OperatingSystemKind.Windows ? Visibility.Visible : Visibility.Collapsed;
+        VerboseLogger.Info($"WSL checkbox visibility updated. Computer1={Computer1WslCheckBox.Visibility}, Computer2={Computer2WslCheckBox.Visibility}.");
     }
 
     private void AppendLog(string message)
     {
+        if (LogTextBox is null)
+        {
+            return;
+        }
+
         var current = LogTextBox.Text;
         var builder = new StringBuilder();
         if (!string.IsNullOrWhiteSpace(current))
