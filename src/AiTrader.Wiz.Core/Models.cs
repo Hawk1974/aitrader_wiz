@@ -32,6 +32,12 @@ public enum ValidationStatus
     Skipped,
 }
 
+public enum AllocationEntryMode
+{
+    Percent,
+    Dollar,
+}
+
 public sealed class ComputerDefinition
 {
     public string Id { get; set; } = string.Empty;
@@ -121,6 +127,20 @@ public sealed class AgentMailConfiguration
     public string RecipientEmail { get; set; } = string.Empty;
 }
 
+public sealed class AllocationInput
+{
+    public AllocationEntryMode Mode { get; set; } = AllocationEntryMode.Percent;
+    public decimal Value { get; set; } = 10m;
+}
+
+public sealed class CashAllocationConfiguration
+{
+    public decimal StartOfDayCashBasis { get; set; } = 25000m;
+    public AllocationInput ProtectedReserve { get; set; } = new();
+    public AllocationInput PerTickerAllocation { get; set; } = new();
+    public int MaxRankedCandidatesPerCycle { get; set; } = 5;
+}
+
 public sealed class ValidationRecord
 {
     public string Key { get; set; } = string.Empty;
@@ -141,6 +161,7 @@ public sealed class WizardState
     public AlpacaLiveConfiguration AlpacaLive { get; set; } = new();
     public TelegramConfiguration Telegram { get; set; } = new();
     public AgentMailConfiguration AgentMail { get; set; } = new();
+    public CashAllocationConfiguration CashAllocation { get; set; } = new();
     public List<ValidationRecord> ValidationResults { get; set; } = [];
 }
 
@@ -149,4 +170,3 @@ public sealed class ExportArtifact
     public string FileName { get; set; } = string.Empty;
     public string Content { get; set; } = string.Empty;
 }
-

@@ -1,17 +1,24 @@
 <Window x:Class="AiTrader.Wiz.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:core="clr-namespace:AiTrader.Wiz.Core;assembly=AiTrader.Wiz.Core"
+        xmlns:local="clr-namespace:AiTrader.Wiz"
         Title="AlTrader Config Wizard"
-        Height="900"
+        Height="930"
         Width="1280"
         WindowStartupLocation="CenterScreen">
     <Grid Margin="12">
         <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <TabControl x:Name="WizardTabs" Grid.Row="0">
+        <Menu Grid.Row="0">
+            <MenuItem Header="About" Click="AboutMenuItem_OnClick"/>
+        </Menu>
+
+        <TabControl x:Name="WizardTabs" Grid.Row="1">
             <TabItem Header="0. Start Here">
                 <ScrollViewer VerticalScrollBarVisibility="Auto">
                     <StackPanel Margin="16">
@@ -41,6 +48,22 @@
                                 <TextBlock TextWrapping="Wrap" Text="• Have Alpaca paper credentials ready."/>
                                 <TextBlock TextWrapping="Wrap" Text="• Have Telegram and AgentMail details ready if those services will be used."/>
                                 <TextBlock TextWrapping="Wrap" Text="• If the backend and desktop are on different machines, have connectivity details ready such as Tailscale and SSH information."/>
+                            </StackPanel>
+                        </GroupBox>
+
+                        <GroupBox Header="Manual Commands" Margin="0,16,0,0">
+                            <StackPanel Margin="12">
+                                <TextBlock FontWeight="Bold" Text="High Marshal"/>
+                                <TextBlock Margin="0,6,0,0" TextWrapping="Wrap" Text="Use these only when you are manually starting a chat-based workflow. Scheduled tasks remain unchanged."/>
+                                <TextBlock Margin="0,8,0,0" FontFamily="Consolas" TextWrapping="Wrap" Text="{x:Static core:WizardStaticContent.HighMarshalFullKickoff}"/>
+                                <TextBlock Margin="0,4,0,0" FontFamily="Consolas" TextWrapping="Wrap" Text="{x:Static core:WizardStaticContent.HighMarshalShortKickoff}"/>
+                                <TextBlock Margin="0,6,0,0" TextWrapping="Wrap" Text="Use High Marshal for manual trading-day kickoff. This does not replace the scheduled automatic kickoff."/>
+
+                                <Separator Margin="0,14,0,14"/>
+
+                                <TextBlock FontWeight="Bold" Text="Overlord"/>
+                                <TextBlock Margin="0,8,0,0" FontFamily="Consolas" TextWrapping="Wrap" Text="{x:Static core:WizardStaticContent.OverlordGoLive}"/>
+                                <TextBlock Margin="0,6,0,0" TextWrapping="Wrap" Text="Use GO LIVE only to stage and confirm live-trading credentials. It is not a daily trading-day kickoff command."/>
                             </StackPanel>
                         </GroupBox>
                     </StackPanel>
@@ -261,9 +284,9 @@
                                 <TextBlock Grid.Row="0" Grid.Column="0" Margin="0,0,8,8" VerticalAlignment="Center" Text="Account Name"/>
                                 <TextBox x:Name="AlpacaPaperAccountTextBox" Grid.Row="0" Grid.Column="1" Margin="0,0,0,8"/>
                                 <TextBlock Grid.Row="1" Grid.Column="0" Margin="0,0,8,8" VerticalAlignment="Center" Text="API Key"/>
-                                <TextBox x:Name="AlpacaPaperApiKeyTextBox" Grid.Row="1" Grid.Column="1" Margin="0,0,0,8"/>
+                                <local:SecretFieldControl x:Name="AlpacaPaperApiKeyControl" Grid.Row="1" Grid.Column="1" Margin="0,0,0,8"/>
                                 <TextBlock Grid.Row="2" Grid.Column="0" Margin="0,0,8,8" VerticalAlignment="Center" Text="Secret Key"/>
-                                <TextBox x:Name="AlpacaPaperSecretTextBox" Grid.Row="2" Grid.Column="1" Margin="0,0,0,8"/>
+                                <local:SecretFieldControl x:Name="AlpacaPaperSecretControl" Grid.Row="2" Grid.Column="1" Margin="0,0,0,8"/>
                                 <TextBlock Grid.Row="3" Grid.Column="0" Margin="0,0,8,0" VerticalAlignment="Center" Text="Base URL"/>
                                 <TextBox x:Name="AlpacaPaperBaseUrlTextBox" Grid.Row="3" Grid.Column="1"/>
                             </Grid>
@@ -280,7 +303,7 @@
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
                                 <TextBlock Grid.Row="0" Grid.Column="0" Margin="0,0,8,8" VerticalAlignment="Center" Text="Bot Token"/>
-                                <TextBox x:Name="TelegramBotTokenTextBox" Grid.Row="0" Grid.Column="1" Margin="0,0,0,8"/>
+                                <local:SecretFieldControl x:Name="TelegramBotTokenControl" Grid.Row="0" Grid.Column="1" Margin="0,0,0,8"/>
                                 <TextBlock Grid.Row="1" Grid.Column="0" Margin="0,0,8,0" VerticalAlignment="Center" Text="Chat ID"/>
                                 <TextBox x:Name="TelegramChatIdTextBox" Grid.Row="1" Grid.Column="1"/>
                             </Grid>
@@ -298,7 +321,7 @@
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
                                 <TextBlock Grid.Row="0" Grid.Column="0" Margin="0,0,8,8" VerticalAlignment="Center" Text="API Key"/>
-                                <TextBox x:Name="AgentMailApiKeyTextBox" Grid.Row="0" Grid.Column="1" Margin="0,0,0,8"/>
+                                <local:SecretFieldControl x:Name="AgentMailApiKeyControl" Grid.Row="0" Grid.Column="1" Margin="0,0,0,8"/>
                                 <TextBlock Grid.Row="1" Grid.Column="0" Margin="0,0,8,8" VerticalAlignment="Center" Text="From ID"/>
                                 <TextBox x:Name="AgentMailFromIdTextBox" Grid.Row="1" Grid.Column="1" Margin="0,0,0,8"/>
                                 <TextBlock Grid.Row="2" Grid.Column="0" Margin="0,0,8,0" VerticalAlignment="Center" Text="Recipient Email"/>
@@ -320,9 +343,9 @@
                                 </Grid.ColumnDefinitions>
                                 <CheckBox x:Name="AlpacaLiveEnabledCheckBox" Grid.Row="0" Grid.Column="1" Margin="0,0,0,8" Content="Store and validate optional live credentials without enabling live trading"/>
                                 <TextBlock Grid.Row="1" Grid.Column="0" Margin="0,0,8,8" VerticalAlignment="Center" Text="API Key"/>
-                                <TextBox x:Name="AlpacaLiveApiKeyTextBox" Grid.Row="1" Grid.Column="1" Margin="0,0,0,8"/>
+                                <local:SecretFieldControl x:Name="AlpacaLiveApiKeyControl" Grid.Row="1" Grid.Column="1" Margin="0,0,0,8"/>
                                 <TextBlock Grid.Row="2" Grid.Column="0" Margin="0,0,8,8" VerticalAlignment="Center" Text="Secret Key"/>
-                                <TextBox x:Name="AlpacaLiveSecretTextBox" Grid.Row="2" Grid.Column="1" Margin="0,0,0,8"/>
+                                <local:SecretFieldControl x:Name="AlpacaLiveSecretControl" Grid.Row="2" Grid.Column="1" Margin="0,0,0,8"/>
                                 <TextBlock Grid.Row="3" Grid.Column="0" Margin="0,0,8,0" VerticalAlignment="Center" Text="Base URL"/>
                                 <TextBox x:Name="AlpacaLiveBaseUrlTextBox" Grid.Row="3" Grid.Column="1"/>
                             </Grid>
@@ -331,7 +354,113 @@
                 </ScrollViewer>
             </TabItem>
 
-            <TabItem Header="6. Review + Export">
+            <TabItem Header="6. Cash Allocation">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="16">
+                        <TextBlock FontSize="20" FontWeight="Bold" Text="Cash Allocation"/>
+                        <TextBlock Margin="0,10,0,0" TextWrapping="Wrap"
+                                   Text="These fields control the client-facing reserve and per-ticker cash-allocation policy that the setup AI will write into the AlTrader instance."/>
+
+                        <GroupBox Header="Calculation Basis" Margin="0,16,0,0">
+                            <Grid Margin="12">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="240"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Row="0" Grid.Column="0" Margin="0,0,8,8" VerticalAlignment="Center" Text="Start-of-Day Cash Basis ($)"/>
+                                <TextBox x:Name="CashBasisTextBox"
+                                         Grid.Row="0"
+                                         Grid.Column="1"
+                                         Margin="0,0,0,8"
+                                         TextChanged="CashAllocationField_OnTextChanged"
+                                         LostFocus="CashAllocationField_OnLostFocus"
+                                         PreviewTextInput="DecimalField_OnPreviewTextInput"
+                                         DataObject.Pasting="DecimalField_OnPasting"/>
+                                <TextBlock Grid.Row="1" Grid.Column="1" Foreground="DimGray" TextWrapping="Wrap"
+                                           Text="Use this to preview the dollar impact of percent-based settings. Example: 25000 shows what 10% means for a $25,000 start-of-day cash balance."/>
+                            </Grid>
+                        </GroupBox>
+
+                        <GroupBox Header="Protected Reserve" Margin="0,16,0,0">
+                            <Grid Margin="12">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="240"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Grid.Row="0" Grid.Column="1" Orientation="Horizontal" Margin="0,0,0,8">
+                                    <RadioButton x:Name="ProtectedReservePercentRadio" GroupName="ProtectedReserveMode" Content="%" IsChecked="True" Checked="CashAllocationMode_OnChecked"/>
+                                    <RadioButton x:Name="ProtectedReserveDollarRadio" GroupName="ProtectedReserveMode" Content="$" Margin="18,0,0,0" Checked="CashAllocationMode_OnChecked"/>
+                                </StackPanel>
+                                <TextBlock Grid.Row="1" Grid.Column="0" Margin="0,0,8,8" VerticalAlignment="Center" Text="Reserve Value"/>
+                                <TextBox x:Name="ProtectedReserveValueTextBox"
+                                         Grid.Row="1"
+                                         Grid.Column="1"
+                                         Margin="0,0,0,8"
+                                         TextChanged="CashAllocationField_OnTextChanged"
+                                         LostFocus="CashAllocationField_OnLostFocus"
+                                         PreviewTextInput="DecimalField_OnPreviewTextInput"
+                                         DataObject.Pasting="DecimalField_OnPasting"/>
+                                <TextBlock x:Name="ProtectedReserveHelperTextBlock" Grid.Row="2" Grid.Column="1" Foreground="DimGray" TextWrapping="Wrap"/>
+                            </Grid>
+                        </GroupBox>
+
+                        <GroupBox Header="Per-Ticker Allocation" Margin="0,16,0,0">
+                            <Grid Margin="12">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="240"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Grid.Row="0" Grid.Column="1" Orientation="Horizontal" Margin="0,0,0,8">
+                                    <RadioButton x:Name="PerTickerPercentRadio" GroupName="PerTickerMode" Content="%" IsChecked="True" Checked="CashAllocationMode_OnChecked"/>
+                                    <RadioButton x:Name="PerTickerDollarRadio" GroupName="PerTickerMode" Content="$" Margin="18,0,0,0" Checked="CashAllocationMode_OnChecked"/>
+                                </StackPanel>
+                                <TextBlock Grid.Row="1" Grid.Column="0" Margin="0,0,8,8" VerticalAlignment="Center" Text="Allocation Value"/>
+                                <TextBox x:Name="PerTickerValueTextBox"
+                                         Grid.Row="1"
+                                         Grid.Column="1"
+                                         Margin="0,0,0,8"
+                                         TextChanged="CashAllocationField_OnTextChanged"
+                                         LostFocus="CashAllocationField_OnLostFocus"
+                                         PreviewTextInput="DecimalField_OnPreviewTextInput"
+                                         DataObject.Pasting="DecimalField_OnPasting"/>
+                                <TextBlock x:Name="PerTickerHelperTextBlock" Grid.Row="2" Grid.Column="1" Foreground="DimGray" TextWrapping="Wrap"/>
+                            </Grid>
+                        </GroupBox>
+
+                        <GroupBox Header="Ranked Candidate Limit" Margin="0,16,0,0">
+                            <Grid Margin="12">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="240"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0" Margin="0,0,8,0" VerticalAlignment="Center" Text="Max Ranked Candidates"/>
+                                <TextBox x:Name="MaxRankedCandidatesTextBox"
+                                         Grid.Column="1"
+                                         TextChanged="CashAllocationField_OnTextChanged"
+                                         LostFocus="CashAllocationField_OnLostFocus"
+                                         PreviewTextInput="IntegerField_OnPreviewTextInput"
+                                         DataObject.Pasting="IntegerField_OnPasting"/>
+                            </Grid>
+                        </GroupBox>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <TabItem Header="7. Review + Export">
                 <Grid Margin="16">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
@@ -352,7 +481,7 @@
             </TabItem>
         </TabControl>
 
-        <DockPanel Grid.Row="1" Margin="0,12,0,0">
+        <DockPanel Grid.Row="2" Margin="0,12,0,0">
             <Button DockPanel.Dock="Left" x:Name="ExitButton" Width="120" Height="34" Content="Cancel / Exit" Click="ExitButton_OnClick"/>
             <Button DockPanel.Dock="Right" x:Name="NextButton" Width="110" Height="34" Margin="12,0,0,0" Content="Next" Click="NextButton_OnClick"/>
             <Button DockPanel.Dock="Right" x:Name="BackButton" Width="110" Height="34" Content="Back" Click="BackButton_OnClick"/>

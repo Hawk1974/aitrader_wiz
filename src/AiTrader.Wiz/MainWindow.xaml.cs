@@ -1,8 +1,11 @@
 using System.Collections.ObjectModel;
+using System.Globalization;
 using System.Net.Http;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
+using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media.Imaging;
 using Microsoft.Win32;
@@ -16,6 +19,7 @@ public partial class MainWindow : Window
     private readonly ObservableCollection<TargetAssignmentRow> _targetRows = [];
     private readonly ValidationService _validationService = new(new HttpClient());
     private WizardState _state = WizardStateFactory.CreateDefault();
+    private bool _isSynchronizingCashInputs;
 
     public MainWindow()
     {
@@ -87,7 +91,7 @@ public partial class MainWindow : Window
         BackendHostTextBox.Text = _state.Connectivity.BackendTargetHostOrIp;
         DesktopHostTextBox.Text = _state.Connectivity.DesktopTargetHostOrIp;
         SshUserTextBox.Text = _state.Connectivity.SshUsername;
-        SshPortTextBox.Text = _state.Connectivity.SshPort.ToString();
+        SshPortTextBox.Text = _state.Connectivity.SshPort.ToString(CultureInfo.InvariantCulture);
         RequiresTailscaleCheckBox.IsChecked = _state.Connectivity.RequiresTailscale;
         BootstrapCompleteCheckBox.IsChecked = _state.Connectivity.BootstrapComplete;
 
@@ -103,23 +107,46 @@ public partial class MainWindow : Window
         LmStudioBaseUrlTextBox.Text = _state.LmStudio.BaseUrl;
         LmStudioModelIdTextBox.Text = _state.LmStudio.ModelId;
         AlpacaPaperAccountTextBox.Text = _state.AlpacaPaper.AccountName;
-        AlpacaPaperApiKeyTextBox.Text = _state.AlpacaPaper.ApiKey;
-        AlpacaPaperSecretTextBox.Text = _state.AlpacaPaper.SecretKey;
+        AlpacaPaperApiKeyControl.Value = _state.AlpacaPaper.ApiKey;
+        AlpacaPaperSecretControl.Value = _state.AlpacaPaper.SecretKey;
         AlpacaPaperBaseUrlTextBox.Text = _state.AlpacaPaper.BaseUrl;
-        TelegramBotTokenTextBox.Text = _state.Telegram.BotToken;
+        TelegramBotTokenControl.Value = _state.Telegram.BotToken;
         TelegramChatIdTextBox.Text = _state.Telegram.ChatId;
-        AgentMailApiKeyTextBox.Text = _state.AgentMail.ApiKey;
+        AgentMailApiKeyControl.Value = _state.AgentMail.ApiKey;
         AgentMailFromIdTextBox.Text = _state.AgentMail.FromId;
         AgentMailRecipientTextBox.Text = _state.AgentMail.RecipientEmail;
         AlpacaLiveEnabledCheckBox.IsChecked = _state.AlpacaLive.Enabled;
-        AlpacaLiveApiKeyTextBox.Text = _state.AlpacaLive.ApiKey;
-        AlpacaLiveSecretTextBox.Text = _state.AlpacaLive.SecretKey;
+        AlpacaLiveApiKeyControl.Value = _state.AlpacaLive.ApiKey;
+        AlpacaLiveSecretControl.Value = _state.AlpacaLive.SecretKey;
         AlpacaLiveBaseUrlTextBox.Text = _state.AlpacaLive.BaseUrl;
 
+        LoadCashAllocationIntoControls();
         RebuildTargetRows();
         UpdateComputer2Visibility();
         UpdateWslCheckboxVisibility();
         VerboseLogger.Info("Wizard state loaded into UI controls.");
+    }
+
+    private void LoadCashAllocationIntoControls()
+    {
+        _isSynchronizingCashInputs = true;
+        CashBasisTextBox.Text = _state.CashAllocation.StartOfDayCashBasis.ToString("0.##", CultureInfo.InvariantCulture);
+        SetAllocationControl(_state.CashAllocation.ProtectedReserve, ProtectedReservePercentRadio, ProtectedReserveDollarRadio, ProtectedReserveValueTextBox);
+        SetAllocationControl(_state.CashAllocation.PerTickerAllocation, PerTickerPercentRadio, PerTickerDollarRadio, PerTickerValueTextBox);
+        MaxRankedCandidatesTextBox.Text = _state.CashAllocation.MaxRankedCandidatesPerCycle.ToString(CultureInfo.InvariantCulture);
+        _isSynchronizingCashInputs = false;
+        UpdateCashAllocationHelperText();
+    }
+
+    private static void SetAllocationControl(
+        AllocationInput input,
+        ToggleButton percentRadio,
+        ToggleButton dollarRadio,
+        TextBox valueTextBox)
+    {
+        percentRadio.IsChecked = input.Mode == AllocationEntryMode.Percent;
+        dollarRadio.IsChecked = input.Mode == AllocationEntryMode.Dollar;
+        valueTextBox.Text = input.Value.ToString("0.##", CultureInfo.InvariantCulture);
     }
 
     private void PopulateStateFromControls()
@@ -153,19 +180,33 @@ public partial class MainWindow : Window
         _state.LmStudio.BaseUrl = LmStudioBaseUrlTextBox.Text.Trim();
         _state.LmStudio.ModelId = LmStudioModelIdTextBox.Text.Trim();
         _state.AlpacaPaper.AccountName = AlpacaPaperAccountTextBox.Text.Trim();
-        _state.AlpacaPaper.ApiKey = AlpacaPaperApiKeyTextBox.Text.Trim();
-        _state.AlpacaPaper.SecretKey = AlpacaPaperSecretTextBox.Text.Trim();
+        _state.AlpacaPaper.ApiKey = AlpacaPaperApiKeyControl.Value.Trim();
+        _state.AlpacaPaper.SecretKey = AlpacaPaperSecretControl.Value.Trim();
         _state.AlpacaPaper.BaseUrl = AlpacaPaperBaseUrlTextBox.Text.Trim();
-        _state.Telegram.BotToken = TelegramBotTokenTextBox.Text.Trim();
+        _state.Telegram.BotToken = TelegramBotTokenControl.Value.Trim();
         _state.Telegram.ChatId = TelegramChatIdTextBox.Text.Trim();
-        _state.AgentMail.ApiKey = AgentMailApiKeyTextBox.Text.Trim();
+        _state.AgentMail.ApiKey = AgentMailApiKeyControl.Value.Trim();
         _state.AgentMail.FromId = AgentMailFromIdTextBox.Text.Trim();
         _state.AgentMail.RecipientEmail = AgentMailRecipientTextBox.Text.Trim();
         _state.AlpacaLive.Enabled = AlpacaLiveEnabledCheckBox.IsChecked == true;
-        _state.AlpacaLive.ApiKey = AlpacaLiveApiKeyTextBox.Text.Trim();
-        _state.AlpacaLive.SecretKey = AlpacaLiveSecretTextBox.Text.Trim();
+        _state.AlpacaLive.ApiKey = AlpacaLiveApiKeyControl.Value.Trim();
+        _state.AlpacaLive.SecretKey = AlpacaLiveSecretControl.Value.Trim();
         _state.AlpacaLive.BaseUrl = AlpacaLiveBaseUrlTextBox.Text.Trim();
+
+        _state.CashAllocation.StartOfDayCashBasis = ParseDecimalOrDefault(CashBasisTextBox.Text, 25000m);
+        _state.CashAllocation.ProtectedReserve = BuildAllocationInput(ProtectedReservePercentRadio, ProtectedReserveValueTextBox, 10m);
+        _state.CashAllocation.PerTickerAllocation = BuildAllocationInput(PerTickerPercentRadio, PerTickerValueTextBox, 10m);
+        _state.CashAllocation.MaxRankedCandidatesPerCycle = ParseIntOrDefault(MaxRankedCandidatesTextBox.Text, 5);
         VerboseLogger.Info($"Wizard state populated. Computers={_state.Computers.Count}, Targets={_state.Targets.Count}, LiveEnabled={_state.AlpacaLive.Enabled}.");
+    }
+
+    private static AllocationInput BuildAllocationInput(ToggleButton percentRadio, TextBox valueTextBox, decimal defaultValue)
+    {
+        return new AllocationInput
+        {
+            Mode = percentRadio.IsChecked == true ? AllocationEntryMode.Percent : AllocationEntryMode.Dollar,
+            Value = ParseDecimalOrDefault(valueTextBox.Text, defaultValue),
+        };
     }
 
     private List<ComputerDefinition> BuildComputersFromControls()
@@ -277,41 +318,6 @@ public partial class MainWindow : Window
                 IsAuthoritativeBackend = row.IsAuthoritativeBackend,
             };
         }).ToList();
-    }
-
-    private void ComputerCountComboBox_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
-    {
-        VerboseLogger.Info($"Computer count changed. SelectedIndex={ComputerCountComboBox?.SelectedIndex}.");
-        UpdateComputer2Visibility();
-        RebuildTargetRows();
-    }
-
-    private void ComputerOsComboBox_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
-    {
-        if (sender is ComboBox comboBox)
-        {
-            VerboseLogger.Info($"Operating system selection changed on {comboBox.Name}. SelectedItem={comboBox.SelectedItem ?? "<null>"}.");
-        }
-        UpdateWslCheckboxVisibility();
-        RebuildTargetRows();
-    }
-
-    private void WslCheckBox_OnChanged(object sender, RoutedEventArgs e)
-    {
-        if (sender is CheckBox checkBox)
-        {
-            VerboseLogger.Info($"WSL backend checkbox changed on {checkBox.Name}. IsChecked={checkBox.IsChecked}.");
-        }
-
-        RebuildTargetRows();
-    }
-
-    private void DeriveTargetsButton_OnClick(object sender, RoutedEventArgs e)
-    {
-        VerboseLogger.Info("Derive Targets button clicked.");
-        RebuildTargetRows();
-        AppendLog("Runtime targets re-derived from the current computer selections.");
-        WizardTabs.SelectedIndex = 2;
     }
 
     private async void RunValidationsButton_OnClick(object sender, RoutedEventArgs e)
@@ -449,6 +455,17 @@ public partial class MainWindow : Window
         }
     }
 
+    private void AboutMenuItem_OnClick(object sender, RoutedEventArgs e)
+    {
+        VerboseLogger.Info("About dialog opened.");
+        var dialog = new AboutWindow
+        {
+            Owner = this,
+        };
+        dialog.ShowDialog();
+        VerboseLogger.Info("About dialog closed.");
+    }
+
     private void BackButton_OnClick(object sender, RoutedEventArgs e)
     {
         if (WizardTabs.SelectedIndex > 0)
@@ -488,6 +505,41 @@ public partial class MainWindow : Window
         Close();
     }
 
+    private void ComputerCountComboBox_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        VerboseLogger.Info($"Computer count changed. SelectedIndex={ComputerCountComboBox?.SelectedIndex}.");
+        UpdateComputer2Visibility();
+        RebuildTargetRows();
+    }
+
+    private void ComputerOsComboBox_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (sender is ComboBox comboBox)
+        {
+            VerboseLogger.Info($"Operating system selection changed on {comboBox.Name}. SelectedItem={comboBox.SelectedItem ?? "<null>"}.");
+        }
+        UpdateWslCheckboxVisibility();
+        RebuildTargetRows();
+    }
+
+    private void WslCheckBox_OnChanged(object sender, RoutedEventArgs e)
+    {
+        if (sender is CheckBox checkBox)
+        {
+            VerboseLogger.Info($"WSL backend checkbox changed on {checkBox.Name}. IsChecked={checkBox.IsChecked}.");
+        }
+
+        RebuildTargetRows();
+    }
+
+    private void DeriveTargetsButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        VerboseLogger.Info("Derive Targets button clicked.");
+        RebuildTargetRows();
+        AppendLog("Runtime targets re-derived from the current computer selections.");
+        WizardTabs.SelectedIndex = 2;
+    }
+
     private void UpdateComputer2Visibility()
     {
         if (Computer2GroupBox is null || ComputerCountComboBox is null)
@@ -511,6 +563,164 @@ public partial class MainWindow : Window
         Computer1WslCheckBox.Visibility = Computer1OsComboBox.SelectedItem is OperatingSystemKind.Windows ? Visibility.Visible : Visibility.Collapsed;
         Computer2WslCheckBox.Visibility = Computer2OsComboBox.SelectedItem is OperatingSystemKind.Windows ? Visibility.Visible : Visibility.Collapsed;
         VerboseLogger.Info($"WSL checkbox visibility updated. Computer1={Computer1WslCheckBox.Visibility}, Computer2={Computer2WslCheckBox.Visibility}.");
+    }
+
+    private void CashAllocationMode_OnChecked(object sender, RoutedEventArgs e)
+    {
+        if (_isSynchronizingCashInputs)
+        {
+            return;
+        }
+
+        VerboseLogger.Info("Cash allocation mode changed.");
+        UpdateCashAllocationHelperText();
+    }
+
+    private void CashAllocationField_OnTextChanged(object sender, TextChangedEventArgs e)
+    {
+        if (_isSynchronizingCashInputs || sender is not TextBox textBox)
+        {
+            return;
+        }
+
+        var allowDecimal = textBox != MaxRankedCandidatesTextBox;
+        var sanitized = CashAllocationCalculator.SanitizeNumericInput(textBox.Text, allowDecimal);
+        if (!string.Equals(textBox.Text, sanitized, StringComparison.Ordinal))
+        {
+            _isSynchronizingCashInputs = true;
+            var caretIndex = textBox.CaretIndex;
+            textBox.Text = sanitized;
+            textBox.CaretIndex = Math.Min(caretIndex, textBox.Text.Length);
+            _isSynchronizingCashInputs = false;
+        }
+
+        UpdateCashAllocationHelperText();
+    }
+
+    private void CashAllocationField_OnLostFocus(object sender, RoutedEventArgs e)
+    {
+        NormalizeCashAllocationInputs();
+        UpdateCashAllocationHelperText();
+    }
+
+    private void DecimalField_OnPreviewTextInput(object sender, TextCompositionEventArgs e)
+    {
+        e.Handled = !IsValidNextInput(sender as TextBox, e.Text, allowDecimal: true);
+    }
+
+    private void IntegerField_OnPreviewTextInput(object sender, TextCompositionEventArgs e)
+    {
+        e.Handled = !IsValidNextInput(sender as TextBox, e.Text, allowDecimal: false);
+    }
+
+    private void DecimalField_OnPasting(object sender, DataObjectPastingEventArgs e)
+    {
+        HandlePaste(sender as TextBox, e, allowDecimal: true);
+    }
+
+    private void IntegerField_OnPasting(object sender, DataObjectPastingEventArgs e)
+    {
+        HandlePaste(sender as TextBox, e, allowDecimal: false);
+    }
+
+    private void NormalizeCashAllocationInputs()
+    {
+        _isSynchronizingCashInputs = true;
+        CashBasisTextBox.Text = NormalizeDecimalText(CashBasisTextBox.Text, 25000m);
+        ProtectedReserveValueTextBox.Text = NormalizeDecimalText(ProtectedReserveValueTextBox.Text, 10m);
+        PerTickerValueTextBox.Text = NormalizeDecimalText(PerTickerValueTextBox.Text, 10m);
+        MaxRankedCandidatesTextBox.Text = NormalizeIntegerText(MaxRankedCandidatesTextBox.Text, 5);
+        _isSynchronizingCashInputs = false;
+    }
+
+    private void UpdateCashAllocationHelperText()
+    {
+        var basis = ParseDecimalOrDefault(CashBasisTextBox.Text, 0m);
+        var protectedReserve = BuildAllocationInput(ProtectedReservePercentRadio, ProtectedReserveValueTextBox, 10m);
+        var perTicker = BuildAllocationInput(PerTickerPercentRadio, PerTickerValueTextBox, 10m);
+
+        ProtectedReserveHelperTextBlock.Text = BuildAllocationHelperText(protectedReserve, basis);
+        PerTickerHelperTextBlock.Text = BuildAllocationHelperText(perTicker, basis);
+    }
+
+    private static string BuildAllocationHelperText(AllocationInput input, decimal basis)
+    {
+        if (basis <= 0m)
+        {
+            return input.Mode == AllocationEntryMode.Percent
+                ? "Enter a start-of-day cash basis to preview the dollar value."
+                : "Enter a start-of-day cash basis to preview the effective percent.";
+        }
+
+        var dollarValue = CashAllocationCalculator.CalculateDollarValue(input, basis);
+        var percentValue = CashAllocationCalculator.CalculatePercentValue(input, basis);
+        return input.Mode == AllocationEntryMode.Percent
+            ? $"= ${dollarValue:0,0.00} based on ${basis:0,0.00}"
+            : $"= {percentValue:0.####}% based on ${basis:0,0.00}";
+    }
+
+    private static string NormalizeDecimalText(string input, decimal fallback)
+    {
+        var sanitized = CashAllocationCalculator.SanitizeNumericInput(input, allowDecimal: true);
+        return decimal.TryParse(sanitized, NumberStyles.Number, CultureInfo.InvariantCulture, out var value)
+            ? value.ToString("0.##", CultureInfo.InvariantCulture)
+            : fallback.ToString("0.##", CultureInfo.InvariantCulture);
+    }
+
+    private static string NormalizeIntegerText(string input, int fallback)
+    {
+        var sanitized = CashAllocationCalculator.SanitizeNumericInput(input, allowDecimal: false);
+        return int.TryParse(sanitized, NumberStyles.Integer, CultureInfo.InvariantCulture, out var value) && value > 0
+            ? value.ToString(CultureInfo.InvariantCulture)
+            : fallback.ToString(CultureInfo.InvariantCulture);
+    }
+
+    private static bool IsValidNextInput(TextBox? textBox, string newText, bool allowDecimal)
+    {
+        if (textBox is null)
+        {
+            return false;
+        }
+
+        var proposed = textBox.Text.Remove(textBox.SelectionStart, textBox.SelectionLength)
+            .Insert(textBox.SelectionStart, newText);
+        var sanitized = CashAllocationCalculator.SanitizeNumericInput(proposed, allowDecimal);
+        return string.Equals(proposed, sanitized, StringComparison.Ordinal);
+    }
+
+    private static void HandlePaste(TextBox? textBox, DataObjectPastingEventArgs e, bool allowDecimal)
+    {
+        if (textBox is null)
+        {
+            e.CancelCommand();
+            return;
+        }
+
+        if (!e.DataObject.GetDataPresent(DataFormats.Text))
+        {
+            e.CancelCommand();
+            return;
+        }
+
+        var pasteText = e.DataObject.GetData(DataFormats.Text) as string ?? string.Empty;
+        if (!IsValidNextInput(textBox, pasteText, allowDecimal))
+        {
+            e.CancelCommand();
+        }
+    }
+
+    private static decimal ParseDecimalOrDefault(string input, decimal defaultValue)
+    {
+        return decimal.TryParse(input, NumberStyles.Number, CultureInfo.InvariantCulture, out var value)
+            ? value
+            : defaultValue;
+    }
+
+    private static int ParseIntOrDefault(string input, int defaultValue)
+    {
+        return int.TryParse(input, NumberStyles.Integer, CultureInfo.InvariantCulture, out var value) && value > 0
+            ? value
+            : defaultValue;
     }
 
     private void AppendLog(string message)

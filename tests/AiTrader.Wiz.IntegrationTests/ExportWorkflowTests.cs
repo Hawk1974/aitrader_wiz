@@ -17,6 +17,9 @@ public sealed class ExportWorkflowTests
         Assert.Contains("INSTRUCTION.md", files);
         Assert.Contains("TARGET_01_LINUX_AUTHORITATIVE.md", files);
         Assert.Contains("TARGET_02_WINDOWS_PRIMARY.md", files);
+
+        var yaml = File.ReadAllText(Path.Combine(outputDirectory, "CLIENT_INTAKE.yaml"));
+        Assert.Contains("cash_allocation_policy:", yaml, StringComparison.Ordinal);
     }
 
     [Fact]

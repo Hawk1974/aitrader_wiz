@@ -131,6 +131,18 @@ public static class RenderingService
             ["recipient_email"] = state.AgentMail.RecipientEmail,
         });
 
+        AppendMap(sb, 1, "cash_allocation_policy", new Dictionary<string, string>
+        {
+            ["start_of_day_cash_basis"] = state.CashAllocation.StartOfDayCashBasis.ToString("0.##"),
+            ["protected_reserve_input_mode"] = state.CashAllocation.ProtectedReserve.Mode.ToString(),
+            ["protected_reserve_input_value"] = state.CashAllocation.ProtectedReserve.Value.ToString("0.##"),
+            ["protected_reserve_percent_effective"] = CashAllocationCalculator.CalculatePercentValue(state.CashAllocation.ProtectedReserve, state.CashAllocation.StartOfDayCashBasis).ToString("0.####"),
+            ["per_ticker_allocation_input_mode"] = state.CashAllocation.PerTickerAllocation.Mode.ToString(),
+            ["per_ticker_allocation_input_value"] = state.CashAllocation.PerTickerAllocation.Value.ToString("0.##"),
+            ["per_ticker_allocation_percent_effective"] = CashAllocationCalculator.CalculatePercentValue(state.CashAllocation.PerTickerAllocation, state.CashAllocation.StartOfDayCashBasis).ToString("0.####"),
+            ["max_ranked_candidates_per_cycle"] = state.CashAllocation.MaxRankedCandidatesPerCycle.ToString(),
+        });
+
         return sb.ToString();
     }
 
@@ -144,6 +156,17 @@ public static class RenderingService
         sb.AppendLine($"- Main contact: {state.ClientIdentity.MainContactName} <{state.ClientIdentity.MainContactEmail}>");
         sb.AppendLine($"- Computers: {state.Computers.Count}");
         sb.AppendLine($"- Runtime targets: {state.Targets.Count}");
+        sb.AppendLine();
+        sb.AppendLine("## Manual Commands");
+        sb.AppendLine($"- High Marshal kickoff: `{WizardStaticContent.HighMarshalFullKickoff}`");
+        sb.AppendLine($"- High Marshal shortcut: `{WizardStaticContent.HighMarshalShortKickoff}`");
+        sb.AppendLine($"- Overlord live staging: `{WizardStaticContent.OverlordGoLive}`");
+        sb.AppendLine();
+        sb.AppendLine("## Cash Allocation Policy");
+        sb.AppendLine($"- Start-of-day cash basis: ${state.CashAllocation.StartOfDayCashBasis:0,0.00}");
+        sb.AppendLine($"- Protected reserve input: {FormatAllocationInput(state.CashAllocation.ProtectedReserve)} ({CashAllocationCalculator.CalculatePercentValue(state.CashAllocation.ProtectedReserve, state.CashAllocation.StartOfDayCashBasis):0.####}% effective)");
+        sb.AppendLine($"- Per-ticker allocation input: {FormatAllocationInput(state.CashAllocation.PerTickerAllocation)} ({CashAllocationCalculator.CalculatePercentValue(state.CashAllocation.PerTickerAllocation, state.CashAllocation.StartOfDayCashBasis):0.####}% effective)");
+        sb.AppendLine($"- Max ranked candidates per cycle: {state.CashAllocation.MaxRankedCandidatesPerCycle}");
         sb.AppendLine();
         sb.AppendLine("## Runtime Targets");
         foreach (var target in state.Targets)
@@ -250,6 +273,13 @@ public static class RenderingService
         sb.AppendLine($"- `{key}`: {(string.IsNullOrWhiteSpace(value) ? "missing" : "provided")}");
     }
 
+    private static string FormatAllocationInput(AllocationInput input)
+    {
+        return input.Mode == AllocationEntryMode.Percent
+            ? $"{input.Value:0.##}%"
+            : $"${input.Value:0,0.00}";
+    }
+
     private static string ToTargetSlug(RuntimeTarget target)
     {
         var kind = target.Kind.ToString().ToUpperInvariant();
@@ -277,4 +307,3 @@ public static class RenderingService
         return JsonSerializer.Serialize(value ?? string.Empty);
     }
 }
-

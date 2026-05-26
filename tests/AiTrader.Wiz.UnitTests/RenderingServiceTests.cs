@@ -15,6 +15,7 @@ public sealed class RenderingServiceTests
         Assert.Contains("client_identity:", yaml, StringComparison.Ordinal);
         Assert.Contains("runtime_targets:", yaml, StringComparison.Ordinal);
         Assert.Contains("alpaca_paper:", yaml, StringComparison.Ordinal);
+        Assert.Contains("cash_allocation_policy:", yaml, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -37,6 +38,18 @@ public sealed class RenderingServiceTests
 
         Assert.Contains("paper mode only", markdown, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("GO LIVE", markdown, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void RenderClientSummary_ContainsManualCommandsAndCashAllocation()
+    {
+        var state = BuildState();
+
+        var markdown = RenderingService.RenderClientSummary(state);
+
+        Assert.Contains("paper trade kickoff", markdown, StringComparison.Ordinal);
+        Assert.Contains("GO LIVE", markdown, StringComparison.Ordinal);
+        Assert.Contains("Cash Allocation Policy", markdown, StringComparison.Ordinal);
     }
 
     private static WizardState BuildState()

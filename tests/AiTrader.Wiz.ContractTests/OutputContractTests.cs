@@ -14,6 +14,7 @@ public sealed class OutputContractTests
         Assert.Contains("computers:", yaml, StringComparison.Ordinal);
         Assert.Contains("runtime_targets:", yaml, StringComparison.Ordinal);
         Assert.Contains("connectivity:", yaml, StringComparison.Ordinal);
+        Assert.Contains("cash_allocation_policy:", yaml, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -38,6 +39,15 @@ public sealed class OutputContractTests
         Assert.Contains("SECRETS_STATUS.md", files);
         Assert.Contains("TARGET_01_LINUX_AUTHORITATIVE.md", files);
         Assert.Contains("TARGET_02_WINDOWS_PRIMARY.md", files);
+    }
+
+    [Fact]
+    public void ClientSummary_ContainsManualCommands()
+    {
+        var markdown = RenderingService.RenderClientSummary(SampleState());
+
+        Assert.Contains("paper trade kickoff", markdown, StringComparison.Ordinal);
+        Assert.Contains("GO LIVE", markdown, StringComparison.Ordinal);
     }
 
     private static WizardState SampleState() =>
