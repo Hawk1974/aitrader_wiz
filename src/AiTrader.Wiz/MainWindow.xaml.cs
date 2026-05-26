@@ -20,6 +20,7 @@ public partial class MainWindow : Window
     private readonly ValidationService _validationService = new(new HttpClient());
     private WizardState _state = WizardStateFactory.CreateDefault();
     private bool _isSynchronizingCashInputs;
+    private bool _uiInitialized;
 
     public MainWindow()
     {
@@ -29,6 +30,7 @@ public partial class MainWindow : Window
         TargetsDataGrid.ItemsSource = _targetRows;
         InitializeOsSelectors();
         LoadStateIntoControls();
+        _uiInitialized = true;
         AppendLog($"Verbose log file: {VerboseLogger.CurrentLogPath}");
         VerboseLogger.Info("MainWindow constructor completed.");
     }
@@ -202,6 +204,15 @@ public partial class MainWindow : Window
 
     private static AllocationInput BuildAllocationInput(ToggleButton percentRadio, TextBox valueTextBox, decimal defaultValue)
     {
+        if (percentRadio is null || valueTextBox is null)
+        {
+            return new AllocationInput
+            {
+                Mode = AllocationEntryMode.Percent,
+                Value = defaultValue,
+            };
+        }
+
         return new AllocationInput
         {
             Mode = percentRadio.IsChecked == true ? AllocationEntryMode.Percent : AllocationEntryMode.Dollar,
@@ -572,6 +583,11 @@ public partial class MainWindow : Window
             return;
         }
 
+        if (!_uiInitialized)
+        {
+            return;
+        }
+
         VerboseLogger.Info("Cash allocation mode changed.");
         UpdateCashAllocationHelperText();
     }
@@ -579,6 +595,11 @@ public partial class MainWindow : Window
     private void CashAllocationField_OnTextChanged(object sender, TextChangedEventArgs e)
     {
         if (_isSynchronizingCashInputs || sender is not TextBox textBox)
+        {
+            return;
+        }
+
+        if (!_uiInitialized)
         {
             return;
         }
@@ -599,6 +620,11 @@ public partial class MainWindow : Window
 
     private void CashAllocationField_OnLostFocus(object sender, RoutedEventArgs e)
     {
+        if (!_uiInitialized)
+        {
+            return;
+        }
+
         NormalizeCashAllocationInputs();
         UpdateCashAllocationHelperText();
     }
@@ -635,6 +661,18 @@ public partial class MainWindow : Window
 
     private void UpdateCashAllocationHelperText()
     {
+        if (CashBasisTextBox is null ||
+            ProtectedReservePercentRadio is null ||
+            ProtectedReserveValueTextBox is null ||
+            PerTickerPercentRadio is null ||
+            PerTickerValueTextBox is null ||
+            ProtectedReserveHelperTextBlock is null ||
+            PerTickerHelperTextBlock is null)
+        {
+            VerboseLogger.Warn("Skipped cash allocation helper update because controls are not initialized yet.");
+            return;
+        }
+
         var basis = ParseDecimalOrDefault(CashBasisTextBox.Text, 0m);
         var protectedReserve = BuildAllocationInput(ProtectedReservePercentRadio, ProtectedReserveValueTextBox, 10m);
         var perTicker = BuildAllocationInput(PerTickerPercentRadio, PerTickerValueTextBox, 10m);
