@@ -9,14 +9,69 @@
         WindowStartupLocation="CenterScreen">
     <Window.Resources>
         <Style x:Key="HelpButtonStyle" TargetType="Button">
-            <Setter Property="Width" Value="18"/>
-            <Setter Property="Height" Value="18"/>
+            <Setter Property="Width" Value="20"/>
+            <Setter Property="Height" Value="20"/>
             <Setter Property="Margin" Value="6,0,0,0"/>
             <Setter Property="Padding" Value="0"/>
-            <Setter Property="Content" Value="?"/>
-            <Setter Property="FontSize" Value="11"/>
-            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Focusable" Value="False"/>
+            <Setter Property="Cursor" Value="Help"/>
             <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="ToolTipService.InitialShowDelay" Value="350"/>
+            <Setter Property="ToolTipService.ShowDuration" Value="15000"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                SnapsToDevicePixels="True">
+                            <Viewbox Width="18" Height="18">
+                                <Canvas Width="32" Height="32">
+                                    <Path Fill="#F2C96C"
+                                          Stroke="#7A5A1B"
+                                          StrokeThickness="1.8"
+                                          Data="M16,3 C23.2,3 29,8.5 29,15.3 C29,22.1 23.2,27.6 16,27.6 C13.6,27.6 11.4,27 9.4,25.9 L4.6,29.2 L5.9,23.8 C4.1,21.6 3,18.6 3,15.3 C3,8.5 8.8,3 16,3 Z"/>
+                                    <Rectangle Width="4.2"
+                                               Height="11.5"
+                                               RadiusX="2.1"
+                                               RadiusY="2.1"
+                                               Fill="#D94E3A"
+                                               Canvas.Left="13.9"
+                                               Canvas.Top="9.1"/>
+                                    <Ellipse Width="4.2"
+                                             Height="4.2"
+                                             Fill="#D94E3A"
+                                             Canvas.Left="13.9"
+                                             Canvas.Top="5.1"/>
+                                </Canvas>
+                            </Viewbox>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Opacity" Value="0.92"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter Property="RenderTransform">
+                                    <Setter.Value>
+                                        <ScaleTransform ScaleX="0.96" ScaleY="0.96"/>
+                                    </Setter.Value>
+                                </Setter>
+                                <Setter Property="RenderTransformOrigin" Value="0.5,0.5"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style TargetType="ToolTip">
+            <Setter Property="Background" Value="#FFF9E8"/>
+            <Setter Property="BorderBrush" Value="#C8A75B"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Foreground" Value="#2D2417"/>
+            <Setter Property="Padding" Value="10,8"/>
+            <Setter Property="MaxWidth" Value="320"/>
+            <Setter Property="FontSize" Value="12"/>
         </Style>
     </Window.Resources>
     <Grid Margin="12">
@@ -115,13 +170,25 @@
                                     <ColumnDefinition Width="240"/>
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
-                                <TextBlock Grid.Row="0" Grid.Column="0" Margin="0,0,8,8" VerticalAlignment="Center" Text="Client Name ?" ToolTip="The client name written into the exported overlay files."/>
+                                <StackPanel Grid.Row="0" Grid.Column="0" Orientation="Horizontal" Margin="0,0,8,8" VerticalAlignment="Center">
+                                    <TextBlock Text="Client Name"/>
+                                    <Button Style="{StaticResource HelpButtonStyle}" ToolTip="The client name written into the exported overlay files."/>
+                                </StackPanel>
                                 <TextBox x:Name="ClientNameTextBox" Grid.Row="0" Grid.Column="1" Margin="0,0,0,8" ToolTip="Enter the client name as it should appear in exports."/>
-                                <TextBlock Grid.Row="1" Grid.Column="0" Margin="0,0,8,8" VerticalAlignment="Center" Text="Main Contact Name ?" ToolTip="Primary client-side contact for this deployment."/>
+                                <StackPanel Grid.Row="1" Grid.Column="0" Orientation="Horizontal" Margin="0,0,8,8" VerticalAlignment="Center">
+                                    <TextBlock Text="Main Contact Name"/>
+                                    <Button Style="{StaticResource HelpButtonStyle}" ToolTip="Primary client-side contact for this deployment."/>
+                                </StackPanel>
                                 <TextBox x:Name="MainContactNameTextBox" Grid.Row="1" Grid.Column="1" Margin="0,0,0,8" ToolTip="Enter the main human contact name."/>
-                                <TextBlock Grid.Row="2" Grid.Column="0" Margin="0,0,8,8" VerticalAlignment="Center" Text="Main Contact Email ?" ToolTip="Email address for the main deployment contact."/>
+                                <StackPanel Grid.Row="2" Grid.Column="0" Orientation="Horizontal" Margin="0,0,8,8" VerticalAlignment="Center">
+                                    <TextBlock Text="Main Contact Email"/>
+                                    <Button Style="{StaticResource HelpButtonStyle}" ToolTip="Email address for the main deployment contact."/>
+                                </StackPanel>
                                 <TextBox x:Name="MainContactEmailTextBox" Grid.Row="2" Grid.Column="1" Margin="0,0,0,8" ToolTip="Enter the main contact email address."/>
-                                <TextBlock Grid.Row="3" Grid.Column="0" Margin="0,0,8,0" VerticalAlignment="Center" Text="Deployment Name ?" ToolTip="Short name for this deployment, pilot, or instance."/>
+                                <StackPanel Grid.Row="3" Grid.Column="0" Orientation="Horizontal" Margin="0,0,8,0" VerticalAlignment="Center">
+                                    <TextBlock Text="Deployment Name"/>
+                                    <Button Style="{StaticResource HelpButtonStyle}" ToolTip="Short name for this deployment, pilot, or instance."/>
+                                </StackPanel>
                                 <TextBox x:Name="DeploymentNameTextBox" Grid.Row="3" Grid.Column="1" ToolTip="Enter the deployment name shown in summaries."/>
                             </Grid>
                         </GroupBox>
@@ -140,7 +207,8 @@
                     <StackPanel Margin="16">
                         <TextBlock FontSize="20" FontWeight="Bold" Text="Physical Computers" ToolTip="Define the physical hosts involved in the deployment."/>
                         <StackPanel Orientation="Horizontal" Margin="0,12,0,0">
-                            <TextBlock VerticalAlignment="Center" Text="How many computers are involved? ?" ToolTip="The wizard supports one or two physical computers."/>
+                            <TextBlock VerticalAlignment="Center" Text="How many computers are involved?"/>
+                            <Button Style="{StaticResource HelpButtonStyle}" ToolTip="The wizard supports one or two physical computers."/>
                             <ComboBox x:Name="ComputerCountComboBox" Width="80" Margin="12,0,0,0" SelectionChanged="ComputerCountComboBox_OnSelectionChanged" ToolTip="Choose one machine for local/WSL setups or two for split deployments.">
                                 <ComboBoxItem Content="1"/>
                                 <ComboBoxItem Content="2" IsSelected="True"/>
@@ -158,9 +226,15 @@
                                     <ColumnDefinition Width="240"/>
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
-                                <TextBlock Grid.Row="0" Grid.Column="0" Margin="0,0,8,8" VerticalAlignment="Center" Text="Label ?" ToolTip="Friendly host label used when targets are derived."/>
+                                <StackPanel Grid.Row="0" Grid.Column="0" Orientation="Horizontal" Margin="0,0,8,8" VerticalAlignment="Center">
+                                    <TextBlock Text="Label"/>
+                                    <Button Style="{StaticResource HelpButtonStyle}" ToolTip="Friendly host label used when targets are derived."/>
+                                </StackPanel>
                                 <TextBox x:Name="Computer1LabelTextBox" Grid.Row="0" Grid.Column="1" Margin="0,0,0,8" ToolTip="Enter a recognizable label for the first computer."/>
-                                <TextBlock Grid.Row="1" Grid.Column="0" Margin="0,0,8,8" VerticalAlignment="Center" Text="Operating System ?" ToolTip="This determines which target kinds can be derived."/>
+                                <StackPanel Grid.Row="1" Grid.Column="0" Orientation="Horizontal" Margin="0,0,8,8" VerticalAlignment="Center">
+                                    <TextBlock Text="Operating System"/>
+                                    <Button Style="{StaticResource HelpButtonStyle}" ToolTip="This determines which target kinds can be derived."/>
+                                </StackPanel>
                                 <ComboBox x:Name="Computer1OsComboBox" Grid.Row="1" Grid.Column="1" Margin="0,0,0,8" SelectionChanged="ComputerOsComboBox_OnSelectionChanged" ToolTip="Choose Windows, Linux, or macOS for computer 1."/>
                                 <CheckBox x:Name="Computer1WslCheckBox" Grid.Row="2" Grid.Column="1" Content="This Windows machine will also host a WSL backend target" Checked="WslCheckBox_OnChanged" Unchecked="WslCheckBox_OnChanged" ToolTip="Enable this when the Windows machine should also expose a Linux backend target through WSL."/>
                             </Grid>
@@ -177,9 +251,15 @@
                                     <ColumnDefinition Width="240"/>
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
-                                <TextBlock Grid.Row="0" Grid.Column="0" Margin="0,0,8,8" VerticalAlignment="Center" Text="Label ?" ToolTip="Friendly host label used when targets are derived."/>
+                                <StackPanel Grid.Row="0" Grid.Column="0" Orientation="Horizontal" Margin="0,0,8,8" VerticalAlignment="Center">
+                                    <TextBlock Text="Label"/>
+                                    <Button Style="{StaticResource HelpButtonStyle}" ToolTip="Friendly host label used when targets are derived."/>
+                                </StackPanel>
                                 <TextBox x:Name="Computer2LabelTextBox" Grid.Row="0" Grid.Column="1" Margin="0,0,0,8" ToolTip="Enter a recognizable label for the second computer."/>
-                                <TextBlock Grid.Row="1" Grid.Column="0" Margin="0,0,8,8" VerticalAlignment="Center" Text="Operating System ?" ToolTip="This determines which target kinds can be derived."/>
+                                <StackPanel Grid.Row="1" Grid.Column="0" Orientation="Horizontal" Margin="0,0,8,8" VerticalAlignment="Center">
+                                    <TextBlock Text="Operating System"/>
+                                    <Button Style="{StaticResource HelpButtonStyle}" ToolTip="This determines which target kinds can be derived."/>
+                                </StackPanel>
                                 <ComboBox x:Name="Computer2OsComboBox" Grid.Row="1" Grid.Column="1" Margin="0,0,0,8" SelectionChanged="ComputerOsComboBox_OnSelectionChanged" ToolTip="Choose Windows, Linux, or macOS for computer 2."/>
                                 <CheckBox x:Name="Computer2WslCheckBox" Grid.Row="2" Grid.Column="1" Content="This Windows machine will also host a WSL backend target" Checked="WslCheckBox_OnChanged" Unchecked="WslCheckBox_OnChanged" ToolTip="Enable this when the second Windows machine should also expose a WSL backend target."/>
                             </Grid>
@@ -238,15 +318,30 @@
                                     <ColumnDefinition Width="240"/>
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
-                                <TextBlock Grid.Row="0" Grid.Column="0" Margin="0,0,8,8" VerticalAlignment="Center" Text="Tailnet Name ?" ToolTip="Tailscale network name if the deployment uses Tailscale."/>
+                                <StackPanel Grid.Row="0" Grid.Column="0" Orientation="Horizontal" Margin="0,0,8,8" VerticalAlignment="Center">
+                                    <TextBlock Text="Tailnet Name"/>
+                                    <Button Style="{StaticResource HelpButtonStyle}" ToolTip="Tailscale network name if the deployment uses Tailscale."/>
+                                </StackPanel>
                                 <TextBox x:Name="TailnetNameTextBox" Grid.Row="0" Grid.Column="1" Margin="0,0,0,8" ToolTip="Enter the shared tailnet name, if applicable."/>
-                                <TextBlock Grid.Row="1" Grid.Column="0" Margin="0,0,8,8" VerticalAlignment="Center" Text="Backend Host or IP ?" ToolTip="Reachable host or IP for the authoritative backend target."/>
+                                <StackPanel Grid.Row="1" Grid.Column="0" Orientation="Horizontal" Margin="0,0,8,8" VerticalAlignment="Center">
+                                    <TextBlock Text="Backend Host or IP"/>
+                                    <Button Style="{StaticResource HelpButtonStyle}" ToolTip="Reachable host or IP for the authoritative backend target."/>
+                                </StackPanel>
                                 <TextBox x:Name="BackendHostTextBox" Grid.Row="1" Grid.Column="1" Margin="0,0,0,8" ToolTip="Enter the backend machine address."/>
-                                <TextBlock Grid.Row="2" Grid.Column="0" Margin="0,0,8,8" VerticalAlignment="Center" Text="Desktop Host or IP ?" ToolTip="Reachable host or IP for the primary desktop target."/>
+                                <StackPanel Grid.Row="2" Grid.Column="0" Orientation="Horizontal" Margin="0,0,8,8" VerticalAlignment="Center">
+                                    <TextBlock Text="Desktop Host or IP"/>
+                                    <Button Style="{StaticResource HelpButtonStyle}" ToolTip="Reachable host or IP for the primary desktop target."/>
+                                </StackPanel>
                                 <TextBox x:Name="DesktopHostTextBox" Grid.Row="2" Grid.Column="1" Margin="0,0,0,8" ToolTip="Enter the desktop machine address."/>
-                                <TextBlock Grid.Row="3" Grid.Column="0" Margin="0,0,8,8" VerticalAlignment="Center" Text="SSH Username ?" ToolTip="Remote username the setup AI should use for backend access."/>
+                                <StackPanel Grid.Row="3" Grid.Column="0" Orientation="Horizontal" Margin="0,0,8,8" VerticalAlignment="Center">
+                                    <TextBlock Text="SSH Username"/>
+                                    <Button Style="{StaticResource HelpButtonStyle}" ToolTip="Remote username the setup AI should use for backend access."/>
+                                </StackPanel>
                                 <TextBox x:Name="SshUserTextBox" Grid.Row="3" Grid.Column="1" Margin="0,0,0,8" ToolTip="Enter the SSH username."/>
-                                <TextBlock Grid.Row="4" Grid.Column="0" Margin="0,0,8,8" VerticalAlignment="Center" Text="SSH Port ?" ToolTip="SSH port used for backend access, typically 22."/>
+                                <StackPanel Grid.Row="4" Grid.Column="0" Orientation="Horizontal" Margin="0,0,8,8" VerticalAlignment="Center">
+                                    <TextBlock Text="SSH Port"/>
+                                    <Button Style="{StaticResource HelpButtonStyle}" ToolTip="SSH port used for backend access, typically 22."/>
+                                </StackPanel>
                                 <TextBox x:Name="SshPortTextBox" Grid.Row="4" Grid.Column="1" Margin="0,0,0,8" ToolTip="Enter the SSH port number."/>
                                 <CheckBox x:Name="RequiresTailscaleCheckBox" Grid.Row="5" Grid.Column="1" Content="This deployment requires Tailscale between targets" ToolTip="Check when cross-target connectivity depends on Tailscale."/>
                                 <CheckBox x:Name="BootstrapCompleteCheckBox" Grid.Row="6" Grid.Column="1" Content="Bootstrap connectivity is already complete" ToolTip="Check when the initial connectivity/bootstrap work has already been finished."/>
@@ -268,21 +363,45 @@
                                     <ColumnDefinition Width="240"/>
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
-                                <TextBlock Grid.Row="0" Grid.Column="0" Margin="0,0,8,8" VerticalAlignment="Center" Text="Hermes Home ?" ToolTip="Base Hermes installation directory on the backend target."/>
+                                <StackPanel Grid.Row="0" Grid.Column="0" Orientation="Horizontal" Margin="0,0,8,8" VerticalAlignment="Center">
+                                    <TextBlock Text="Hermes Home"/>
+                                    <Button Style="{StaticResource HelpButtonStyle}" ToolTip="Base Hermes installation directory on the backend target."/>
+                                </StackPanel>
                                 <TextBox x:Name="HermesHomeTextBox" Grid.Row="0" Grid.Column="1" Margin="0,0,0,8" ToolTip="Enter the Hermes home path."/>
-                                <TextBlock Grid.Row="1" Grid.Column="0" Margin="0,0,8,8" VerticalAlignment="Center" Text="Repo Path ?" ToolTip="Filesystem path where the AlTrader repo bundle should live on the backend."/>
+                                <StackPanel Grid.Row="1" Grid.Column="0" Orientation="Horizontal" Margin="0,0,8,8" VerticalAlignment="Center">
+                                    <TextBlock Text="Repo Path"/>
+                                    <Button Style="{StaticResource HelpButtonStyle}" ToolTip="Filesystem path where the AlTrader repo bundle should live on the backend."/>
+                                </StackPanel>
                                 <TextBox x:Name="RepoPathTextBox" Grid.Row="1" Grid.Column="1" Margin="0,0,0,8" ToolTip="Enter the backend repo path."/>
-                                <TextBlock Grid.Row="2" Grid.Column="0" Margin="0,0,8,8" VerticalAlignment="Center" Text="Data Path ?" ToolTip="Primary runtime data directory for Hermes-managed state."/>
+                                <StackPanel Grid.Row="2" Grid.Column="0" Orientation="Horizontal" Margin="0,0,8,8" VerticalAlignment="Center">
+                                    <TextBlock Text="Data Path"/>
+                                    <Button Style="{StaticResource HelpButtonStyle}" ToolTip="Primary runtime data directory for Hermes-managed state."/>
+                                </StackPanel>
                                 <TextBox x:Name="DataPathTextBox" Grid.Row="2" Grid.Column="1" Margin="0,0,0,8" ToolTip="Enter the backend data path."/>
-                                <TextBlock Grid.Row="3" Grid.Column="0" Margin="0,0,8,8" VerticalAlignment="Center" Text="AlTrader Data Path ?" ToolTip="Dedicated data directory for AlTrader runtime files."/>
+                                <StackPanel Grid.Row="3" Grid.Column="0" Orientation="Horizontal" Margin="0,0,8,8" VerticalAlignment="Center">
+                                    <TextBlock Text="AlTrader Data Path"/>
+                                    <Button Style="{StaticResource HelpButtonStyle}" ToolTip="Dedicated data directory for AlTrader runtime files."/>
+                                </StackPanel>
                                 <TextBox x:Name="AlTraderDataPathTextBox" Grid.Row="3" Grid.Column="1" Margin="0,0,0,8" ToolTip="Enter the AlTrader data path."/>
-                                <TextBlock Grid.Row="4" Grid.Column="0" Margin="0,0,8,8" VerticalAlignment="Center" Text="Models Path ?" ToolTip="Directory containing model assets available to the deployment."/>
+                                <StackPanel Grid.Row="4" Grid.Column="0" Orientation="Horizontal" Margin="0,0,8,8" VerticalAlignment="Center">
+                                    <TextBlock Text="Models Path"/>
+                                    <Button Style="{StaticResource HelpButtonStyle}" ToolTip="Directory containing model assets available to the deployment."/>
+                                </StackPanel>
                                 <TextBox x:Name="ModelsPathTextBox" Grid.Row="4" Grid.Column="1" Margin="0,0,0,8" ToolTip="Enter the models path."/>
-                                <TextBlock Grid.Row="5" Grid.Column="0" Margin="0,0,8,8" VerticalAlignment="Center" Text="Logs Path ?" ToolTip="Directory where backend logs should be written."/>
+                                <StackPanel Grid.Row="5" Grid.Column="0" Orientation="Horizontal" Margin="0,0,8,8" VerticalAlignment="Center">
+                                    <TextBlock Text="Logs Path"/>
+                                    <Button Style="{StaticResource HelpButtonStyle}" ToolTip="Directory where backend logs should be written."/>
+                                </StackPanel>
                                 <TextBox x:Name="LogsPathTextBox" Grid.Row="5" Grid.Column="1" Margin="0,0,0,8" ToolTip="Enter the logs path."/>
-                                <TextBlock Grid.Row="6" Grid.Column="0" Margin="0,0,8,8" VerticalAlignment="Center" Text="Backups Path ?" ToolTip="Directory reserved for backups on the backend target."/>
+                                <StackPanel Grid.Row="6" Grid.Column="0" Orientation="Horizontal" Margin="0,0,8,8" VerticalAlignment="Center">
+                                    <TextBlock Text="Backups Path"/>
+                                    <Button Style="{StaticResource HelpButtonStyle}" ToolTip="Directory reserved for backups on the backend target."/>
+                                </StackPanel>
                                 <TextBox x:Name="BackupsPathTextBox" Grid.Row="6" Grid.Column="1" Margin="0,0,0,8" ToolTip="Enter the backups path."/>
-                                <TextBlock Grid.Row="7" Grid.Column="0" Margin="0,0,8,0" VerticalAlignment="Center" Text="Timezone ?" ToolTip="IANA timezone string used for scheduling and log interpretation."/>
+                                <StackPanel Grid.Row="7" Grid.Column="0" Orientation="Horizontal" Margin="0,0,8,0" VerticalAlignment="Center">
+                                    <TextBlock Text="Timezone"/>
+                                    <Button Style="{StaticResource HelpButtonStyle}" ToolTip="IANA timezone string used for scheduling and log interpretation."/>
+                                </StackPanel>
                                 <TextBox x:Name="TimezoneTextBox" Grid.Row="7" Grid.Column="1" ToolTip="Enter a timezone like America/New_York."/>
                             </Grid>
                         </GroupBox>
@@ -310,9 +429,15 @@
                                     <ColumnDefinition Width="240"/>
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
-                                <TextBlock Grid.Row="0" Grid.Column="0" Margin="0,0,8,8" VerticalAlignment="Center" Text="Base URL ?" ToolTip="HTTP base URL for the LM Studio API endpoint."/>
+                                <StackPanel Grid.Row="0" Grid.Column="0" Orientation="Horizontal" Margin="0,0,8,8" VerticalAlignment="Center">
+                                    <TextBlock Text="Base URL"/>
+                                    <Button Style="{StaticResource HelpButtonStyle}" ToolTip="HTTP base URL for the LM Studio API endpoint."/>
+                                </StackPanel>
                                 <TextBox x:Name="LmStudioBaseUrlTextBox" Grid.Row="0" Grid.Column="1" Margin="0,0,0,8" ToolTip="Enter the LM Studio base URL."/>
-                                <TextBlock Grid.Row="1" Grid.Column="0" Margin="0,0,8,0" VerticalAlignment="Center" Text="Model ID ?" ToolTip="Exact model identifier expected to be available through LM Studio."/>
+                                <StackPanel Grid.Row="1" Grid.Column="0" Orientation="Horizontal" Margin="0,0,8,0" VerticalAlignment="Center">
+                                    <TextBlock Text="Model ID"/>
+                                    <Button Style="{StaticResource HelpButtonStyle}" ToolTip="Exact model identifier expected to be available through LM Studio."/>
+                                </StackPanel>
                                 <TextBox x:Name="LmStudioModelIdTextBox" Grid.Row="1" Grid.Column="1" ToolTip="Enter the LM Studio model ID."/>
                             </Grid>
                         </GroupBox>
@@ -329,13 +454,25 @@
                                     <ColumnDefinition Width="240"/>
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
-                                <TextBlock Grid.Row="0" Grid.Column="0" Margin="0,0,8,8" VerticalAlignment="Center" Text="Account Name ?" ToolTip="Friendly label for the Alpaca paper account."/>
+                                <StackPanel Grid.Row="0" Grid.Column="0" Orientation="Horizontal" Margin="0,0,8,8" VerticalAlignment="Center">
+                                    <TextBlock Text="Account Name"/>
+                                    <Button Style="{StaticResource HelpButtonStyle}" ToolTip="Friendly label for the Alpaca paper account."/>
+                                </StackPanel>
                                 <TextBox x:Name="AlpacaPaperAccountTextBox" Grid.Row="0" Grid.Column="1" Margin="0,0,0,8" ToolTip="Enter the Alpaca paper account name or label."/>
-                                <TextBlock Grid.Row="1" Grid.Column="0" Margin="0,0,8,8" VerticalAlignment="Center" Text="API Key ?" ToolTip="Alpaca paper API key."/>
+                                <StackPanel Grid.Row="1" Grid.Column="0" Orientation="Horizontal" Margin="0,0,8,8" VerticalAlignment="Center">
+                                    <TextBlock Text="API Key"/>
+                                    <Button Style="{StaticResource HelpButtonStyle}" ToolTip="Alpaca paper API key."/>
+                                </StackPanel>
                                 <local:SecretFieldControl x:Name="AlpacaPaperApiKeyControl" Grid.Row="1" Grid.Column="1" Margin="0,0,0,8" ToolTip="Paste the Alpaca paper API key."/>
-                                <TextBlock Grid.Row="2" Grid.Column="0" Margin="0,0,8,8" VerticalAlignment="Center" Text="Secret Key ?" ToolTip="Alpaca paper secret key."/>
+                                <StackPanel Grid.Row="2" Grid.Column="0" Orientation="Horizontal" Margin="0,0,8,8" VerticalAlignment="Center">
+                                    <TextBlock Text="Secret Key"/>
+                                    <Button Style="{StaticResource HelpButtonStyle}" ToolTip="Alpaca paper secret key."/>
+                                </StackPanel>
                                 <local:SecretFieldControl x:Name="AlpacaPaperSecretControl" Grid.Row="2" Grid.Column="1" Margin="0,0,0,8" ToolTip="Paste the Alpaca paper secret key."/>
-                                <TextBlock Grid.Row="3" Grid.Column="0" Margin="0,0,8,0" VerticalAlignment="Center" Text="Base URL ?" ToolTip="Paper-trading API base URL."/>
+                                <StackPanel Grid.Row="3" Grid.Column="0" Orientation="Horizontal" Margin="0,0,8,0" VerticalAlignment="Center">
+                                    <TextBlock Text="Base URL"/>
+                                    <Button Style="{StaticResource HelpButtonStyle}" ToolTip="Paper-trading API base URL."/>
+                                </StackPanel>
                                 <TextBox x:Name="AlpacaPaperBaseUrlTextBox" Grid.Row="3" Grid.Column="1" ToolTip="Enter the Alpaca paper base URL."/>
                             </Grid>
                         </GroupBox>
@@ -350,9 +487,15 @@
                                     <ColumnDefinition Width="240"/>
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
-                                <TextBlock Grid.Row="0" Grid.Column="0" Margin="0,0,8,8" VerticalAlignment="Center" Text="Bot Token ?" ToolTip="Telegram bot token used for message delivery."/>
+                                <StackPanel Grid.Row="0" Grid.Column="0" Orientation="Horizontal" Margin="0,0,8,8" VerticalAlignment="Center">
+                                    <TextBlock Text="Bot Token"/>
+                                    <Button Style="{StaticResource HelpButtonStyle}" ToolTip="Telegram bot token used for message delivery."/>
+                                </StackPanel>
                                 <local:SecretFieldControl x:Name="TelegramBotTokenControl" Grid.Row="0" Grid.Column="1" Margin="0,0,0,8" ToolTip="Paste the Telegram bot token."/>
-                                <TextBlock Grid.Row="1" Grid.Column="0" Margin="0,0,8,0" VerticalAlignment="Center" Text="Chat ID ?" ToolTip="Telegram chat identifier used for notifications."/>
+                                <StackPanel Grid.Row="1" Grid.Column="0" Orientation="Horizontal" Margin="0,0,8,0" VerticalAlignment="Center">
+                                    <TextBlock Text="Chat ID"/>
+                                    <Button Style="{StaticResource HelpButtonStyle}" ToolTip="Telegram chat identifier used for notifications."/>
+                                </StackPanel>
                                 <TextBox x:Name="TelegramChatIdTextBox" Grid.Row="1" Grid.Column="1" ToolTip="Enter the Telegram chat ID."/>
                             </Grid>
                         </GroupBox>
@@ -368,11 +511,20 @@
                                     <ColumnDefinition Width="240"/>
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
-                                <TextBlock Grid.Row="0" Grid.Column="0" Margin="0,0,8,8" VerticalAlignment="Center" Text="API Key ?" ToolTip="AgentMail bearer token used for validation and delivery."/>
+                                <StackPanel Grid.Row="0" Grid.Column="0" Orientation="Horizontal" Margin="0,0,8,8" VerticalAlignment="Center">
+                                    <TextBlock Text="API Key"/>
+                                    <Button Style="{StaticResource HelpButtonStyle}" ToolTip="AgentMail bearer token used for validation and delivery."/>
+                                </StackPanel>
                                 <local:SecretFieldControl x:Name="AgentMailApiKeyControl" Grid.Row="0" Grid.Column="1" Margin="0,0,0,8" ToolTip="Paste the AgentMail API key."/>
-                                <TextBlock Grid.Row="1" Grid.Column="0" Margin="0,0,8,8" VerticalAlignment="Center" Text="From ID ?" ToolTip="AgentMail inbox or sender identifier."/>
+                                <StackPanel Grid.Row="1" Grid.Column="0" Orientation="Horizontal" Margin="0,0,8,8" VerticalAlignment="Center">
+                                    <TextBlock Text="From ID"/>
+                                    <Button Style="{StaticResource HelpButtonStyle}" ToolTip="AgentMail inbox or sender identifier."/>
+                                </StackPanel>
                                 <TextBox x:Name="AgentMailFromIdTextBox" Grid.Row="1" Grid.Column="1" Margin="0,0,0,8" ToolTip="Enter the AgentMail from ID."/>
-                                <TextBlock Grid.Row="2" Grid.Column="0" Margin="0,0,8,0" VerticalAlignment="Center" Text="Recipient Email ?" ToolTip="Destination email address for notifications."/>
+                                <StackPanel Grid.Row="2" Grid.Column="0" Orientation="Horizontal" Margin="0,0,8,0" VerticalAlignment="Center">
+                                    <TextBlock Text="Recipient Email"/>
+                                    <Button Style="{StaticResource HelpButtonStyle}" ToolTip="Destination email address for notifications."/>
+                                </StackPanel>
                                 <TextBox x:Name="AgentMailRecipientTextBox" Grid.Row="2" Grid.Column="1" ToolTip="Enter the notification recipient email."/>
                             </Grid>
                         </GroupBox>
@@ -390,11 +542,20 @@
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
                                 <CheckBox x:Name="AlpacaLiveEnabledCheckBox" Grid.Row="0" Grid.Column="1" Margin="0,0,0,8" Content="Store and validate optional live credentials without enabling live trading" ToolTip="Enable this only to preserve live credentials for a later controlled GO LIVE step."/>
-                                <TextBlock Grid.Row="1" Grid.Column="0" Margin="0,0,8,8" VerticalAlignment="Center" Text="API Key ?" ToolTip="Optional Alpaca live API key."/>
+                                <StackPanel Grid.Row="1" Grid.Column="0" Orientation="Horizontal" Margin="0,0,8,8" VerticalAlignment="Center">
+                                    <TextBlock Text="API Key"/>
+                                    <Button Style="{StaticResource HelpButtonStyle}" ToolTip="Optional Alpaca live API key."/>
+                                </StackPanel>
                                 <local:SecretFieldControl x:Name="AlpacaLiveApiKeyControl" Grid.Row="1" Grid.Column="1" Margin="0,0,0,8" ToolTip="Paste the optional Alpaca live API key."/>
-                                <TextBlock Grid.Row="2" Grid.Column="0" Margin="0,0,8,8" VerticalAlignment="Center" Text="Secret Key ?" ToolTip="Optional Alpaca live secret key."/>
+                                <StackPanel Grid.Row="2" Grid.Column="0" Orientation="Horizontal" Margin="0,0,8,8" VerticalAlignment="Center">
+                                    <TextBlock Text="Secret Key"/>
+                                    <Button Style="{StaticResource HelpButtonStyle}" ToolTip="Optional Alpaca live secret key."/>
+                                </StackPanel>
                                 <local:SecretFieldControl x:Name="AlpacaLiveSecretControl" Grid.Row="2" Grid.Column="1" Margin="0,0,0,8" ToolTip="Paste the optional Alpaca live secret key."/>
-                                <TextBlock Grid.Row="3" Grid.Column="0" Margin="0,0,8,0" VerticalAlignment="Center" Text="Base URL ?" ToolTip="Live-trading API base URL."/>
+                                <StackPanel Grid.Row="3" Grid.Column="0" Orientation="Horizontal" Margin="0,0,8,0" VerticalAlignment="Center">
+                                    <TextBlock Text="Base URL"/>
+                                    <Button Style="{StaticResource HelpButtonStyle}" ToolTip="Live-trading API base URL."/>
+                                </StackPanel>
                                 <TextBox x:Name="AlpacaLiveBaseUrlTextBox" Grid.Row="3" Grid.Column="1" ToolTip="Enter the Alpaca live base URL."/>
                             </Grid>
                         </GroupBox>
@@ -425,7 +586,10 @@
                                     <ColumnDefinition Width="240"/>
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
-                                <TextBlock Grid.Row="0" Grid.Column="0" Margin="0,0,8,8" VerticalAlignment="Center" Text="Start-of-Day Cash Basis ($) ?" ToolTip="Reference cash balance used for helper calculations."/>
+                                <StackPanel Grid.Row="0" Grid.Column="0" Orientation="Horizontal" Margin="0,0,8,8" VerticalAlignment="Center">
+                                    <TextBlock Text="Start-of-Day Cash Basis ($)"/>
+                                    <Button Style="{StaticResource HelpButtonStyle}" ToolTip="Reference cash balance used for helper calculations."/>
+                                </StackPanel>
                                 <TextBox x:Name="CashBasisTextBox"
                                          Grid.Row="0"
                                          Grid.Column="1"
@@ -455,7 +619,10 @@
                                     <RadioButton x:Name="ProtectedReservePercentRadio" GroupName="ProtectedReserveMode" Content="%" IsChecked="True" Checked="CashAllocationMode_OnChecked" ToolTip="Interpret reserve as a percentage of the cash basis."/>
                                     <RadioButton x:Name="ProtectedReserveDollarRadio" GroupName="ProtectedReserveMode" Content="$" Margin="18,0,0,0" Checked="CashAllocationMode_OnChecked" ToolTip="Interpret reserve as a fixed dollar amount."/>
                                 </StackPanel>
-                                <TextBlock Grid.Row="1" Grid.Column="0" Margin="0,0,8,8" VerticalAlignment="Center" Text="Reserve Value ?" ToolTip="Protected reserve value in the selected mode."/>
+                                <StackPanel Grid.Row="1" Grid.Column="0" Orientation="Horizontal" Margin="0,0,8,8" VerticalAlignment="Center">
+                                    <TextBlock Text="Reserve Value"/>
+                                    <Button Style="{StaticResource HelpButtonStyle}" ToolTip="Protected reserve value in the selected mode."/>
+                                </StackPanel>
                                 <TextBox x:Name="ProtectedReserveValueTextBox"
                                          Grid.Row="1"
                                          Grid.Column="1"
@@ -484,7 +651,10 @@
                                     <RadioButton x:Name="PerTickerPercentRadio" GroupName="PerTickerMode" Content="%" IsChecked="True" Checked="CashAllocationMode_OnChecked" ToolTip="Interpret allocation as a percentage of the cash basis."/>
                                     <RadioButton x:Name="PerTickerDollarRadio" GroupName="PerTickerMode" Content="$" Margin="18,0,0,0" Checked="CashAllocationMode_OnChecked" ToolTip="Interpret allocation as a fixed dollar amount."/>
                                 </StackPanel>
-                                <TextBlock Grid.Row="1" Grid.Column="0" Margin="0,0,8,8" VerticalAlignment="Center" Text="Allocation Value ?" ToolTip="Per-ticker allocation value in the selected mode."/>
+                                <StackPanel Grid.Row="1" Grid.Column="0" Orientation="Horizontal" Margin="0,0,8,8" VerticalAlignment="Center">
+                                    <TextBlock Text="Allocation Value"/>
+                                    <Button Style="{StaticResource HelpButtonStyle}" ToolTip="Per-ticker allocation value in the selected mode."/>
+                                </StackPanel>
                                 <TextBox x:Name="PerTickerValueTextBox"
                                          Grid.Row="1"
                                          Grid.Column="1"
@@ -504,7 +674,10 @@
                                     <ColumnDefinition Width="240"/>
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
-                                <TextBlock Grid.Column="0" Margin="0,0,8,0" VerticalAlignment="Center" Text="Max Ranked Candidates ?" ToolTip="Positive integer limit for candidates processed per cycle."/>
+                                <StackPanel Grid.Column="0" Orientation="Horizontal" Margin="0,0,8,0" VerticalAlignment="Center">
+                                    <TextBlock Text="Max Ranked Candidates"/>
+                                    <Button Style="{StaticResource HelpButtonStyle}" ToolTip="Positive integer limit for candidates processed per cycle."/>
+                                </StackPanel>
                                 <TextBox x:Name="MaxRankedCandidatesTextBox"
                                          Grid.Column="1"
                                          ToolTip="Enter the maximum number of ranked candidates."
