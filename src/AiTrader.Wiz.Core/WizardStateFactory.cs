@@ -10,6 +10,7 @@ public static class WizardStateFactory
             Id = "computer_1",
             Label = "Windows Workstation",
             OperatingSystem = OperatingSystemKind.Windows,
+            AccessMode = AccessMode.DirectLocal,
         });
 
         state.Computers.Add(new ComputerDefinition
@@ -17,9 +18,11 @@ public static class WizardStateFactory
             Id = "computer_2",
             Label = "Linux Spark Backend",
             OperatingSystem = OperatingSystemKind.Linux,
+            AccessMode = AccessMode.Ssh,
         });
 
         state.Targets = TopologyService.DeriveTargets(state.Computers);
+        TopologyService.ApplyDefaultDeploymentModel(state);
         return state;
     }
 }

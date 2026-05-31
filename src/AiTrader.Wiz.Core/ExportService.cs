@@ -6,19 +6,23 @@ public static class ExportService
 {
     public static string ExportOverlay(WizardState state, string directoryPath)
     {
-        Directory.CreateDirectory(directoryPath);
-        foreach (var artifact in RenderingService.RenderAll(state))
-        {
-            File.WriteAllText(Path.Combine(directoryPath, artifact.FileName), artifact.Content);
-        }
-
-        return directoryPath;
+        return ExportStandupPackage(state, directoryPath);
     }
 
     public static string ExportOverlayZip(WizardState state, string zipPath)
     {
+        return ExportStandupPackageZip(state, zipPath);
+    }
+
+    public static string ExportStandupPackage(WizardState state, string directoryPath)
+    {
+        return PackageTemplateService.StageFullPackage(state, directoryPath);
+    }
+
+    public static string ExportStandupPackageZip(WizardState state, string zipPath)
+    {
         var staging = Path.Combine(Path.GetTempPath(), "aitrader_wiz_export", Guid.NewGuid().ToString("N"));
-        ExportOverlay(state, staging);
+        ExportStandupPackage(state, staging);
         Directory.CreateDirectory(Path.GetDirectoryName(zipPath)!);
         if (File.Exists(zipPath))
         {
@@ -30,4 +34,3 @@ public static class ExportService
         return zipPath;
     }
 }
-

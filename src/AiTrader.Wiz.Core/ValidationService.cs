@@ -14,7 +14,7 @@ public sealed class ValidationService(HttpClient httpClient)
             return Failed("alpaca_paper", "Alpaca paper credentials are missing.");
         }
 
-        using var request = new HttpRequestMessage(HttpMethod.Get, $"{config.BaseUrl.TrimEnd('/')}/v2/account");
+        using var request = new HttpRequestMessage(HttpMethod.Get, $"{NormalizeAlpacaBaseUrl(config.BaseUrl)}/account");
         request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
         request.Headers.Add("APCA-API-KEY-ID", config.ApiKey);
         request.Headers.Add("APCA-API-SECRET-KEY", config.SecretKey);
@@ -33,7 +33,7 @@ public sealed class ValidationService(HttpClient httpClient)
             return Failed("alpaca_live", "Alpaca live credentials are missing.");
         }
 
-        using var request = new HttpRequestMessage(HttpMethod.Get, $"{config.BaseUrl.TrimEnd('/')}/v2/account");
+        using var request = new HttpRequestMessage(HttpMethod.Get, $"{NormalizeAlpacaBaseUrl(config.BaseUrl)}/account");
         request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
         request.Headers.Add("APCA-API-KEY-ID", config.ApiKey);
         request.Headers.Add("APCA-API-SECRET-KEY", config.SecretKey);
@@ -73,15 +73,27 @@ public sealed class ValidationService(HttpClient httpClient)
         return await SendJsonValidationAsync("agentmail", request, cancellationToken);
     }
 
-    public async Task<ValidationRecord> ValidateLmStudioAsync(LmStudioConfiguration config, CancellationToken cancellationToken = default)
+    public async Task<ValidationRecord> ValidateHermesAiProviderAsync(HermesAiProviderConfiguration config, CancellationToken cancellationToken = default)
     {
-        if (string.IsNullOrWhiteSpace(config.BaseUrl) || string.IsNullOrWhiteSpace(config.ModelId))
+        var provider = HermesProviderCatalog.Find(config.ProviderKey);
+        if (string.IsNullOrWhiteSpace(provider.Key))
         {
-            return Failed("lm_studio", "LM Studio base URL or model id is missing.");
+            return Failed("hermes_ai_provider", "An AI provider must be selected for the backend target.");
         }
 
-        using var request = new HttpRequestMessage(HttpMethod.Get, $"{config.BaseUrl.TrimEnd('/')}/v1/models");
-        return await SendJsonValidationAsync("lm_studio", request, cancellationToken);
+        return provider.ValidationMode switch
+        {
+            "openai_compatible" => await ValidateOpenAiCompatibleProviderAsync(
+                "hermes_ai_provider",
+                string.IsNullOrWhiteSpace(config.BaseUrl) ? provider.DefaultBaseUrl : config.BaseUrl,
+                config.ModelName,
+                config.ApiKey,
+                requireApiKey: provider.RequiresApiKey,
+                cancellationToken),
+            "anthropic" => await ValidateAnthropicProviderAsync(config, provider, cancellationToken),
+            "no_http_validation" => ValidateRecordedProvider(config, provider),
+            _ => Failed("hermes_ai_provider", "The selected AI provider is not supported by the wizard."),
+        };
     }
 
     public ValidationRecord ValidateConnectivity(ConnectivityConfiguration config)
@@ -99,12 +111,142 @@ public sealed class ValidationService(HttpClient httpClient)
         return Passed("connectivity", "Connectivity details look complete.");
     }
 
+    public ValidationRecord ValidateDeploymentModel(WizardState state)
+    {
+        var errors = new List<string>();
+        var backendComputerId = state.Targets.SingleOrDefault(target => target.IsAuthoritativeBackend)?.ComputerId;
+
+        foreach (var computer in state.Computers)
+        {
+            foreach (var placement in computer.ServicePlacements)
+            {
+                if (placement.PlacementMode == ServicePlacementMode.DockerContainer && !computer.DockerAvailable)
+                {
+                    errors.Add($"{computer.Label} assigns {DeploymentCatalog.GetServiceDisplayName(placement.Service)} to Docker but Docker is not enabled for that computer.");
+                }
+            }
+
+            if (computer.AccessMode == AccessMode.Ssh)
+            {
+                if (string.IsNullOrWhiteSpace(computer.AccessHostOrIp) ||
+                    string.IsNullOrWhiteSpace(computer.AccessUsername) ||
+                    computer.AccessPort <= 0)
+                {
+                    errors.Add($"{computer.Label} uses SSH access but SSH host, username, or port is incomplete.");
+                }
+            }
+            else if (computer.AccessMode == AccessMode.Tailscale && string.IsNullOrWhiteSpace(computer.AccessHostOrIp))
+            {
+                errors.Add($"{computer.Label} uses Tailscale access but the Tailscale host or IP is missing.");
+            }
+        }
+
+        if (!string.IsNullOrWhiteSpace(backendComputerId))
+        {
+            var backendComputer = state.Computers.FirstOrDefault(computer => computer.Id == backendComputerId);
+            if (backendComputer is not null)
+            {
+                foreach (var service in new[]
+                         {
+                             ServiceKind.HermesBackend,
+                             ServiceKind.TelegramIntegration,
+                             ServiceKind.AgentMailIntegration,
+                             ServiceKind.AlpacaIntegration,
+                         })
+                {
+                    if (GetPlacementMode(backendComputer, service) == ServicePlacementMode.NotOnThisComputer)
+                    {
+                        errors.Add($"{backendComputer.Label} must explicitly place {DeploymentCatalog.GetServiceDisplayName(service)} because it is the authoritative backend computer.");
+                    }
+                }
+
+                if (state.Connectivity.RequiresTailscale && GetPlacementMode(backendComputer, ServiceKind.Tailscale) == ServicePlacementMode.NotOnThisComputer)
+                {
+                    errors.Add($"{backendComputer.Label} must explicitly place Tailscale because the deployment requires Tailscale.");
+                }
+            }
+        }
+
+        foreach (var service in GetRequiredServices(state))
+        {
+            if (state.Computers.All(computer => GetPlacementMode(computer, service) == ServicePlacementMode.NotOnThisComputer))
+            {
+                errors.Add($"{DeploymentCatalog.GetServiceDisplayName(service)} is required by the chosen topology but is not assigned to any computer.");
+            }
+        }
+
+        return errors.Count == 0
+            ? Passed("deployment_model", "Docker, access, and service placement settings look complete.")
+            : Failed("deployment_model", string.Join(" ", errors));
+    }
+
     public static ValidationRecord ClassifyTopology(WizardState state)
     {
-        var errors = TopologyService.ValidateTopology(state);
+        var errors = TopologyService.ValidateTopology(state).ToList();
+        if (string.IsNullOrWhiteSpace(state.HermesAiProvider.ProviderKey))
+        {
+            errors.Add("Exactly one backend AI provider must be selected on the Targets page.");
+        }
+
         return errors.Count == 0
             ? Passed("topology", "Topology is valid.")
             : Failed("topology", string.Join(" ", errors));
+    }
+
+    private async Task<ValidationRecord> ValidateOpenAiCompatibleProviderAsync(
+        string key,
+        string baseUrl,
+        string modelName,
+        string apiKey,
+        bool requireApiKey,
+        CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(baseUrl) || string.IsNullOrWhiteSpace(modelName))
+        {
+            return Failed(key, "The selected AI provider requires both a base URL and a model name.");
+        }
+
+        if (requireApiKey && string.IsNullOrWhiteSpace(apiKey))
+        {
+            return Failed(key, "The selected AI provider requires an API key.");
+        }
+
+        using var request = new HttpRequestMessage(HttpMethod.Get, $"{baseUrl.TrimEnd('/')}/models");
+        if (!string.IsNullOrWhiteSpace(apiKey))
+        {
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
+        }
+
+        return await SendJsonValidationAsync(key, request, cancellationToken);
+    }
+
+    private async Task<ValidationRecord> ValidateAnthropicProviderAsync(HermesAiProviderConfiguration config, HermesProviderOption provider, CancellationToken cancellationToken)
+    {
+        var baseUrl = string.IsNullOrWhiteSpace(config.BaseUrl) ? provider.DefaultBaseUrl : config.BaseUrl;
+        if (string.IsNullOrWhiteSpace(config.ModelName))
+        {
+            return Failed("hermes_ai_provider", "Claude requires a model name.");
+        }
+
+        if (string.IsNullOrWhiteSpace(config.ApiKey))
+        {
+            return Failed("hermes_ai_provider", "Claude requires an API key.");
+        }
+
+        using var request = new HttpRequestMessage(HttpMethod.Get, $"{baseUrl.TrimEnd('/')}/v1/models");
+        request.Headers.Add("x-api-key", config.ApiKey);
+        request.Headers.Add("anthropic-version", "2023-06-01");
+        return await SendJsonValidationAsync("hermes_ai_provider", request, cancellationToken);
+    }
+
+    private static ValidationRecord ValidateRecordedProvider(HermesAiProviderConfiguration config, HermesProviderOption provider)
+    {
+        if (string.IsNullOrWhiteSpace(config.ModelName))
+        {
+            return Failed("hermes_ai_provider", $"{provider.DisplayName} requires a model name to be recorded in the export.");
+        }
+
+        return Passed("hermes_ai_provider", $"{provider.DisplayName} recorded for Hermes backend. Direct endpoint validation is not available in the wizard for this provider.");
     }
 
     private async Task<ValidationRecord> SendJsonValidationAsync(string key, HttpRequestMessage request, CancellationToken cancellationToken)
@@ -145,9 +287,49 @@ public sealed class ValidationService(HttpClient httpClient)
 
     private static string Truncate(string value) => value.Length > 180 ? value[..180] : value;
 
+    private static string NormalizeAlpacaBaseUrl(string value)
+    {
+        var trimmed = value.Trim().TrimEnd('/');
+        if (string.IsNullOrWhiteSpace(trimmed))
+        {
+            return "https://paper-api.alpaca.markets/v2";
+        }
+
+        return trimmed.EndsWith("/v2", StringComparison.OrdinalIgnoreCase)
+            ? trimmed
+            : $"{trimmed}/v2";
+    }
+
     private static ValidationRecord Passed(string key, string message) => new() { Key = key, Status = ValidationStatus.Passed, Message = message };
     private static ValidationRecord Warning(string key, string message) => new() { Key = key, Status = ValidationStatus.PassedWithWarning, Message = message };
     private static ValidationRecord Failed(string key, string message) => new() { Key = key, Status = ValidationStatus.FailedBlocking, Message = message };
     private static ValidationRecord Skipped(string key, string message) => new() { Key = key, Status = ValidationStatus.Skipped, Message = message };
-}
 
+    private static IReadOnlyList<ServiceKind> GetRequiredServices(WizardState state)
+    {
+        var required = new List<ServiceKind>();
+        if (state.Targets.Any(target => target.Roles.Contains(RoleKind.HermesDesktop)))
+        {
+            required.Add(ServiceKind.HermesDesktop);
+        }
+
+        if (state.Targets.Any(target => target.Roles.Contains(RoleKind.HermesBackend)))
+        {
+            required.Add(ServiceKind.HermesBackend);
+            required.Add(ServiceKind.TelegramIntegration);
+            required.Add(ServiceKind.AgentMailIntegration);
+            required.Add(ServiceKind.AlpacaIntegration);
+        }
+
+        if (state.Connectivity.RequiresTailscale)
+        {
+            required.Add(ServiceKind.Tailscale);
+        }
+
+        return required.Distinct().ToArray();
+    }
+
+    private static ServicePlacementMode GetPlacementMode(ComputerDefinition computer, ServiceKind service) =>
+        computer.ServicePlacements.FirstOrDefault(placement => placement.Service == service)?.PlacementMode
+        ?? ServicePlacementMode.NotOnThisComputer;
+}

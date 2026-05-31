@@ -88,6 +88,10 @@ public static class TopologyService
         {
             errors.Add("The backend target must be marked authoritative.");
         }
+        else if (backendTargets[0].Kind is not (RuntimeTargetKind.Linux or RuntimeTargetKind.Wsl))
+        {
+            errors.Add("The authoritative backend target must be Linux or WSL.");
+        }
 
         var desktopTargets = state.Targets.Where(t => t.Roles.Contains(RoleKind.HermesDesktop)).ToList();
         if (desktopTargets.Count < 1)
@@ -107,5 +111,56 @@ public static class TopologyService
 
     public static bool IsDesktopCompatible(RuntimeTargetKind kind) =>
         kind is RuntimeTargetKind.Windows or RuntimeTargetKind.MacOs;
-}
 
+    public static void ApplyDefaultDeploymentModel(WizardState state)
+    {
+        foreach (var computer in state.Computers)
+        {
+            EnsureServicePlacements(computer);
+
+            var targets = state.Targets.Where(target => target.ComputerId == computer.Id).ToList();
+            var hasDesktop = targets.Any(target => target.Roles.Contains(RoleKind.HermesDesktop));
+            var hasBackend = targets.Any(target => target.Roles.Contains(RoleKind.HermesBackend));
+            var isAuthoritativeBackend = targets.Any(target => target.IsAuthoritativeBackend);
+
+            SetDefaultPlacement(computer, ServiceKind.HermesDesktop, hasDesktop ? ServicePlacementMode.HostNative : ServicePlacementMode.NotOnThisComputer);
+            SetDefaultPlacement(computer, ServiceKind.HermesBackend, hasBackend
+                ? (computer.DockerAvailable ? ServicePlacementMode.DockerContainer : ServicePlacementMode.HostNative)
+                : ServicePlacementMode.NotOnThisComputer);
+            SetDefaultPlacement(computer, ServiceKind.TelegramIntegration, isAuthoritativeBackend ? DefaultBackendServicePlacement(computer) : ServicePlacementMode.NotOnThisComputer);
+            SetDefaultPlacement(computer, ServiceKind.AgentMailIntegration, isAuthoritativeBackend ? DefaultBackendServicePlacement(computer) : ServicePlacementMode.NotOnThisComputer);
+            SetDefaultPlacement(computer, ServiceKind.AlpacaIntegration, isAuthoritativeBackend ? DefaultBackendServicePlacement(computer) : ServicePlacementMode.NotOnThisComputer);
+            SetDefaultPlacement(computer, ServiceKind.Tailscale,
+                state.Connectivity.RequiresTailscale && (hasDesktop || isAuthoritativeBackend)
+                    ? DefaultBackendServicePlacement(computer)
+                    : ServicePlacementMode.NotOnThisComputer);
+        }
+    }
+
+    private static ServicePlacementMode DefaultBackendServicePlacement(ComputerDefinition computer) =>
+        computer.DockerAvailable ? ServicePlacementMode.DockerContainer : ServicePlacementMode.HostNative;
+
+    private static void EnsureServicePlacements(ComputerDefinition computer)
+    {
+        foreach (var service in DeploymentCatalog.SupportedServices)
+        {
+            if (computer.ServicePlacements.All(existing => existing.Service != service))
+            {
+                computer.ServicePlacements.Add(new ServicePlacement
+                {
+                    Service = service,
+                    PlacementMode = ServicePlacementMode.NotOnThisComputer,
+                });
+            }
+        }
+    }
+
+    private static void SetDefaultPlacement(ComputerDefinition computer, ServiceKind service, ServicePlacementMode placementMode)
+    {
+        var placement = computer.ServicePlacements.First(existing => existing.Service == service);
+        if (placement.PlacementMode == ServicePlacementMode.NotOnThisComputer || placement.PlacementMode == ServicePlacementMode.HostNative)
+        {
+            placement.PlacementMode = placementMode;
+        }
+    }
+}

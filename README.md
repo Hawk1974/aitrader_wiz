@@ -1,8 +1,8 @@
 # AiTrader Wiz
 
-`AiTrader Wiz` is a Windows .NET intake wizard that creates the client-specific YAML and Markdown overlay files another AI will use, together with the static `AlTrader` repo zip, to stand up AlTrader in paper mode.
+`AiTrader Wiz` is a Windows .NET intake wizard that creates the full client-specific AlTrader stand-up package another AI will use to stand up AlTrader in paper mode.
 
-It does not install Hermes, does not configure the backend, does not configure the desktop, does not modify the `AlTrader` repo zip, and does not enable live trading.
+It does not install Hermes, does not configure the backend, does not configure the desktop, and does not enable live trading.
 
 ## Repo Layout
 

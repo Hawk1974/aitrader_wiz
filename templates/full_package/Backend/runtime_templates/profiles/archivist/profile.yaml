@@ -1,0 +1,3 @@
+description: Archives only completed AlTrader Kanban tasks and keeps the board clean.
+  Never assigns, deletes, or mutates non-done tasks.
+description_auto: false

@@ -1,0 +1,3 @@
+description: Reporting and notification worker for summaries, manifests, email, and
+  Telegram notices.
+description_auto: false

@@ -18,4 +18,12 @@
     <Product>AlTrader Config Wizard</Product>
   </PropertyGroup>
 
+  <ItemGroup>
+    <Content Include="..\..\templates\**\*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      <Link>templates\%(RecursiveDir)%(Filename)%(Extension)</Link>
+    </Content>
+  </ItemGroup>
+
 </Project>

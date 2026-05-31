@@ -1,0 +1,17 @@
+{
+  "schema_version": "1.0.0",
+  "runtime_mode": "observe_only",
+  "project_name": "altrader",
+  "data_dir": "data",
+  "config_dir": "config",
+  "schemas_dir": "schemas",
+  "broker": {
+    "default_mode": "paper",
+    "paper_enabled": true,
+    "live_enabled_env_var": "ALPACA_LIVE_TRADING_ENABLED"
+  },
+  "kanban": {
+    "enabled": true,
+    "scripts_mutate_kanban": false
+  }
+}

@@ -20,6 +20,9 @@ public sealed class ExportWorkflowTests
 
         var yaml = File.ReadAllText(Path.Combine(outputDirectory, "CLIENT_INTAKE.yaml"));
         Assert.Contains("cash_allocation_policy:", yaml, StringComparison.Ordinal);
+        Assert.Contains("docker_available:", yaml, StringComparison.Ordinal);
+        Assert.Contains("service_placements:", yaml, StringComparison.Ordinal);
+        Assert.Contains("access_mode:", yaml, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -97,10 +100,12 @@ internal static class SampleStates
                 FromId = "from-id",
                 RecipientEmail = "operator@example.com",
             },
-            LmStudio = new LmStudioConfiguration
+            HermesAiProvider = new HermesAiProviderConfiguration
             {
-                BaseUrl = "http://spark:1234",
-                ModelId = "qwen",
+                ProviderKey = "openai",
+                BaseUrl = "https://api.openai.com/v1",
+                ModelName = "gpt-4.1",
+                ApiKey = "api-key",
             },
         };
 
@@ -133,9 +138,11 @@ internal static class SampleStates
             DisplayName = backendKind.ToString(),
             Kind = backendKind,
             ComputerId = backendKind == RuntimeTargetKind.Wsl ? "computer_1" : "computer_2",
-            Roles = [RoleKind.HermesBackend, RoleKind.LmStudio],
+            Roles = [RoleKind.HermesBackend],
             IsAuthoritativeBackend = true,
         });
+
+        TopologyService.ApplyDefaultDeploymentModel(state);
         return state;
     }
 }

@@ -17,6 +17,8 @@ namespace AiTrader.Wiz;
 public partial class MainWindow : Window
 {
     private readonly ObservableCollection<TargetAssignmentRow> _targetRows = [];
+    private readonly ObservableCollection<ComputerServicePlacementRow> _computer1ServiceRows = [];
+    private readonly ObservableCollection<ComputerServicePlacementRow> _computer2ServiceRows = [];
     private readonly ValidationService _validationService = new(new HttpClient());
     private WizardState _state = WizardStateFactory.CreateDefault();
     private bool _isSynchronizingCashInputs;
@@ -28,10 +30,12 @@ public partial class MainWindow : Window
         InitializeComponent();
         InitializeWindowIcon();
         TargetsDataGrid.ItemsSource = _targetRows;
+        Computer1ServicePlacementDataGrid.ItemsSource = _computer1ServiceRows;
+        Computer2ServicePlacementDataGrid.ItemsSource = _computer2ServiceRows;
         InitializeOsSelectors();
         LoadStateIntoControls();
         _uiInitialized = true;
-        AppendLog($"Verbose log file: {VerboseLogger.CurrentLogPath}");
+        AppendLog($"Verbose log file: {VerboseLogger.CurrentLogDisplayPath}");
         VerboseLogger.Info("MainWindow constructor completed.");
     }
 
@@ -64,6 +68,10 @@ public partial class MainWindow : Window
         var source = Enum.GetValues<OperatingSystemKind>().ToList();
         Computer1OsComboBox.ItemsSource = source;
         Computer2OsComboBox.ItemsSource = source;
+        AiProviderComboBox.ItemsSource = HermesProviderCatalog.All;
+        AiProviderServicesComboBox.ItemsSource = HermesProviderCatalog.All;
+        Computer1AccessModeComboBox.ItemsSource = DeploymentCatalog.AccessModeOptions;
+        Computer2AccessModeComboBox.ItemsSource = DeploymentCatalog.AccessModeOptions;
     }
 
     private void LoadStateIntoControls()
@@ -80,6 +88,11 @@ public partial class MainWindow : Window
             Computer1LabelTextBox.Text = _state.Computers[0].Label;
             Computer1OsComboBox.SelectedItem = _state.Computers[0].OperatingSystem;
             Computer1WslCheckBox.IsChecked = _state.Computers[0].UsesWslBackend;
+            Computer1DockerCheckBox.IsChecked = _state.Computers[0].DockerAvailable;
+            Computer1AccessModeComboBox.SelectedValue = _state.Computers[0].AccessMode;
+            Computer1AccessHostTextBox.Text = _state.Computers[0].AccessHostOrIp;
+            Computer1AccessUsernameTextBox.Text = _state.Computers[0].AccessUsername;
+            Computer1AccessPortTextBox.Text = _state.Computers[0].AccessPort.ToString(CultureInfo.InvariantCulture);
         }
 
         if (_state.Computers.Count > 1)
@@ -87,6 +100,11 @@ public partial class MainWindow : Window
             Computer2LabelTextBox.Text = _state.Computers[1].Label;
             Computer2OsComboBox.SelectedItem = _state.Computers[1].OperatingSystem;
             Computer2WslCheckBox.IsChecked = _state.Computers[1].UsesWslBackend;
+            Computer2DockerCheckBox.IsChecked = _state.Computers[1].DockerAvailable;
+            Computer2AccessModeComboBox.SelectedValue = _state.Computers[1].AccessMode;
+            Computer2AccessHostTextBox.Text = _state.Computers[1].AccessHostOrIp;
+            Computer2AccessUsernameTextBox.Text = _state.Computers[1].AccessUsername;
+            Computer2AccessPortTextBox.Text = _state.Computers[1].AccessPort.ToString(CultureInfo.InvariantCulture);
         }
 
         TailnetNameTextBox.Text = _state.Connectivity.TailnetName;
@@ -106,8 +124,12 @@ public partial class MainWindow : Window
         BackupsPathTextBox.Text = _state.Backend.BackupsPath;
         TimezoneTextBox.Text = _state.Backend.Timezone;
 
-        LmStudioBaseUrlTextBox.Text = _state.LmStudio.BaseUrl;
-        LmStudioModelIdTextBox.Text = _state.LmStudio.ModelId;
+        var selectedProvider = HermesProviderCatalog.Find(_state.HermesAiProvider.ProviderKey);
+        AiProviderComboBox.SelectedItem = selectedProvider;
+        AiProviderServicesComboBox.SelectedItem = selectedProvider;
+        AiProviderBaseUrlTextBox.Text = _state.HermesAiProvider.BaseUrl;
+        AiProviderModelTextBox.Text = _state.HermesAiProvider.ModelName;
+        AiProviderApiKeyControl.Value = _state.HermesAiProvider.ApiKey;
         AlpacaPaperAccountTextBox.Text = _state.AlpacaPaper.AccountName;
         AlpacaPaperApiKeyControl.Value = _state.AlpacaPaper.ApiKey;
         AlpacaPaperSecretControl.Value = _state.AlpacaPaper.SecretKey;
@@ -124,8 +146,12 @@ public partial class MainWindow : Window
 
         LoadCashAllocationIntoControls();
         RebuildTargetRows();
+        LoadServicePlacementRows();
         UpdateComputer2Visibility();
         UpdateWslCheckboxVisibility();
+        UpdateAccessModeVisibility();
+        UpdateServicePlacementVisibility();
+        UpdateAiProviderUi();
         VerboseLogger.Info("Wizard state loaded into UI controls.");
     }
 
@@ -179,8 +205,10 @@ public partial class MainWindow : Window
         _state.Backend.BackupsPath = BackupsPathTextBox.Text.Trim();
         _state.Backend.Timezone = TimezoneTextBox.Text.Trim();
 
-        _state.LmStudio.BaseUrl = LmStudioBaseUrlTextBox.Text.Trim();
-        _state.LmStudio.ModelId = LmStudioModelIdTextBox.Text.Trim();
+        _state.HermesAiProvider.ProviderKey = GetSelectedProviderKey();
+        _state.HermesAiProvider.BaseUrl = AiProviderBaseUrlTextBox.Text.Trim();
+        _state.HermesAiProvider.ModelName = AiProviderModelTextBox.Text.Trim();
+        _state.HermesAiProvider.ApiKey = AiProviderApiKeyControl.Value.Trim();
         _state.AlpacaPaper.AccountName = AlpacaPaperAccountTextBox.Text.Trim();
         _state.AlpacaPaper.ApiKey = AlpacaPaperApiKeyControl.Value.Trim();
         _state.AlpacaPaper.SecretKey = AlpacaPaperSecretControl.Value.Trim();
@@ -235,6 +263,16 @@ public partial class MainWindow : Window
                     Label = computer.Label,
                     OperatingSystem = computer.OperatingSystem,
                     UsesWslBackend = computer.UsesWslBackend,
+                    DockerAvailable = computer.DockerAvailable,
+                    AccessMode = computer.AccessMode,
+                    AccessHostOrIp = computer.AccessHostOrIp,
+                    AccessPort = computer.AccessPort,
+                    AccessUsername = computer.AccessUsername,
+                    ServicePlacements = computer.ServicePlacements.Select(item => new ServicePlacement
+                    {
+                        Service = item.Service,
+                        PlacementMode = item.PlacementMode,
+                    }).ToList(),
                 })
                 .ToList();
         }
@@ -247,6 +285,12 @@ public partial class MainWindow : Window
                 Label = string.IsNullOrWhiteSpace(Computer1LabelTextBox.Text) ? "Computer 1" : Computer1LabelTextBox.Text.Trim(),
                 OperatingSystem = Computer1OsComboBox.SelectedItem is OperatingSystemKind os1 ? os1 : OperatingSystemKind.Windows,
                 UsesWslBackend = Computer1WslCheckBox.IsChecked == true,
+                DockerAvailable = Computer1DockerCheckBox.IsChecked == true,
+                AccessMode = Computer1AccessModeComboBox.SelectedValue is AccessMode accessMode1 ? accessMode1 : AccessMode.DirectLocal,
+                AccessHostOrIp = Computer1AccessHostTextBox.Text.Trim(),
+                AccessUsername = Computer1AccessUsernameTextBox.Text.Trim(),
+                AccessPort = ParseIntOrDefault(Computer1AccessPortTextBox.Text, 22),
+                ServicePlacements = BuildServicePlacements(_computer1ServiceRows),
             }
         };
 
@@ -264,6 +308,16 @@ public partial class MainWindow : Window
                         Label = existingComputer2.Label,
                         OperatingSystem = existingComputer2.OperatingSystem,
                         UsesWslBackend = existingComputer2.UsesWslBackend,
+                        DockerAvailable = existingComputer2.DockerAvailable,
+                        AccessMode = existingComputer2.AccessMode,
+                        AccessHostOrIp = existingComputer2.AccessHostOrIp,
+                        AccessPort = existingComputer2.AccessPort,
+                        AccessUsername = existingComputer2.AccessUsername,
+                        ServicePlacements = existingComputer2.ServicePlacements.Select(item => new ServicePlacement
+                        {
+                            Service = item.Service,
+                            PlacementMode = item.PlacementMode,
+                        }).ToList(),
                     });
                 }
 
@@ -276,6 +330,12 @@ public partial class MainWindow : Window
                 Label = string.IsNullOrWhiteSpace(Computer2LabelTextBox.Text) ? "Computer 2" : Computer2LabelTextBox.Text.Trim(),
                 OperatingSystem = Computer2OsComboBox.SelectedItem is OperatingSystemKind os2 ? os2 : OperatingSystemKind.Linux,
                 UsesWslBackend = Computer2WslCheckBox.IsChecked == true,
+                DockerAvailable = Computer2DockerCheckBox.IsChecked == true,
+                AccessMode = Computer2AccessModeComboBox.SelectedValue is AccessMode accessMode2 ? accessMode2 : AccessMode.DirectLocal,
+                AccessHostOrIp = Computer2AccessHostTextBox.Text.Trim(),
+                AccessUsername = Computer2AccessUsernameTextBox.Text.Trim(),
+                AccessPort = ParseIntOrDefault(Computer2AccessPortTextBox.Text, 22),
+                ServicePlacements = BuildServicePlacements(_computer2ServiceRows),
             });
         }
 
@@ -301,12 +361,14 @@ public partial class MainWindow : Window
                 Kind = target.Kind,
                 HermesBackend = existing?.HermesBackend ?? false,
                 HermesDesktop = existing?.HermesDesktop ?? false,
-                LmStudio = existing?.LmStudio ?? false,
                 IsPrimaryDesktop = existing?.IsPrimaryDesktop ?? false,
                 IsAuthoritativeBackend = existing?.IsAuthoritativeBackend ?? false,
+                AiProviderKey = existing?.AiProviderKey ?? _state.HermesAiProvider.ProviderKey,
             });
         }
         VerboseLogger.Info($"Runtime target rows rebuilt. Count={_targetRows.Count}.");
+        SyncAiProviderSelectionFromRows();
+        RefreshDeploymentModelDefaults();
     }
 
     private List<RuntimeTarget> BuildTargetsFromRows()
@@ -316,8 +378,6 @@ public partial class MainWindow : Window
             var roles = new List<RoleKind>();
             if (row.HermesBackend) roles.Add(RoleKind.HermesBackend);
             if (row.HermesDesktop) roles.Add(RoleKind.HermesDesktop);
-            if (row.LmStudio) roles.Add(RoleKind.LmStudio);
-
             return new RuntimeTarget
             {
                 Id = row.TargetId,
@@ -336,18 +396,10 @@ public partial class MainWindow : Window
         VerboseLogger.Info("Run Validations button clicked.");
         try
         {
-            PopulateStateFromControls();
-            _state.ValidationResults.Clear();
-            _state.ValidationResults.Add(ValidationService.ClassifyTopology(_state));
-            _state.ValidationResults.Add(_validationService.ValidateConnectivity(_state.Connectivity));
-            _state.ValidationResults.Add(await _validationService.ValidateAlpacaPaperAsync(_state.AlpacaPaper));
-            _state.ValidationResults.Add(await _validationService.ValidateTelegramAsync(_state.Telegram));
-            _state.ValidationResults.Add(await _validationService.ValidateAgentMailAsync(_state.AgentMail));
-            _state.ValidationResults.Add(await _validationService.ValidateLmStudioAsync(_state.LmStudio));
-            _state.ValidationResults.Add(await _validationService.ValidateAlpacaLiveAsync(_state.AlpacaLive));
+            var results = await RunAllValidationsAsync();
 
             AppendLog("Validation results:");
-            foreach (var record in _state.ValidationResults)
+            foreach (var record in results)
             {
                 AppendLog($"- {record.Key}: {record.Status} - {record.Message}");
                 VerboseLogger.Info($"Validation result: {record.Key} => {record.Status} :: {record.Message}");
@@ -428,22 +480,23 @@ public partial class MainWindow : Window
         try
         {
             PopulateStateFromControls();
-            var topologyErrors = TopologyService.ValidateTopology(_state);
-            if (topologyErrors.Count > 0)
+            var validationResults = RunAllValidationsAsync().GetAwaiter().GetResult();
+            var blocking = validationResults.Where(record => record.Status == ValidationStatus.FailedBlocking).ToList();
+            if (blocking.Count > 0)
             {
                 AppendLog("Export blocked:");
-                foreach (var error in topologyErrors)
+                foreach (var record in blocking)
                 {
-                    AppendLog($"- {error}");
-                    VerboseLogger.Warn($"Export blocked by topology error: {error}");
+                    AppendLog($"- {record.Key}: {record.Message}");
+                    VerboseLogger.Warn($"Export blocked by validation failure: {record.Key} => {record.Message}");
                 }
                 return;
             }
 
             var dialog = new SaveFileDialog
             {
-                Title = "Export AI overlay zip",
-                FileName = "AiTraderWiz_Overlay.zip",
+                Title = "Export AlTrader stand-up package zip",
+                FileName = "AiTraderWiz_Standup_Package.zip",
                 Filter = "Zip Files (*.zip)|*.zip",
                 DefaultExt = ".zip",
             };
@@ -454,16 +507,27 @@ public partial class MainWindow : Window
                 return;
             }
 
-            ExportService.ExportOverlayZip(_state, dialog.FileName);
-            AppendLog($"Overlay files exported to: {dialog.FileName}");
-            VerboseLogger.Info($"Overlay zip exported successfully to {dialog.FileName}.");
+            ExportService.ExportStandupPackageZip(_state, dialog.FileName);
+            AppendLog($"Stand-up package exported to: {dialog.FileName}");
+            VerboseLogger.Info($"Stand-up package zip exported successfully to {dialog.FileName}.");
         }
         catch (Exception ex)
         {
-            VerboseLogger.Error("Overlay export failed.", ex);
+            VerboseLogger.Error("Stand-up package export failed.", ex);
             AppendLog($"Export failed: {ex.Message}");
             throw;
         }
+    }
+
+    private void ClearLogButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (LogTextBox is null || string.IsNullOrEmpty(LogTextBox.Text))
+        {
+            return;
+        }
+
+        LogTextBox.Clear();
+        VerboseLogger.Info("Visible log display cleared by user.");
     }
 
     private void AboutMenuItem_OnClick(object sender, RoutedEventArgs e)
@@ -511,8 +575,8 @@ public partial class MainWindow : Window
             return;
         }
 
-        VerboseLogger.Warn("Application exit confirmed before overlay export.");
-        AppendLog("Exiting without exporting overlay files.");
+        VerboseLogger.Warn("Application exit confirmed before stand-up package export.");
+        AppendLog("Exiting without exporting stand-up package files.");
         Close();
     }
 
@@ -543,12 +607,46 @@ public partial class MainWindow : Window
         RebuildTargetRows();
     }
 
+    private void AccessModeComboBox_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (!_uiInitialized)
+        {
+            return;
+        }
+
+        UpdateAccessModeVisibility();
+    }
+
     private void DeriveTargetsButton_OnClick(object sender, RoutedEventArgs e)
     {
         VerboseLogger.Info("Derive Targets button clicked.");
         RebuildTargetRows();
         AppendLog("Runtime targets re-derived from the current computer selections.");
         WizardTabs.SelectedIndex = 2;
+    }
+
+    private void AiProviderComboBox_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (!_uiInitialized)
+        {
+            return;
+        }
+
+        SyncProviderComboSelections(AiProviderComboBox);
+        UpdateAiProviderUi();
+        SyncAiProviderSelectionToRows();
+    }
+
+    private void AiProviderServicesComboBox_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (!_uiInitialized)
+        {
+            return;
+        }
+
+        SyncProviderComboSelections(AiProviderServicesComboBox);
+        UpdateAiProviderUi();
+        SyncAiProviderSelectionToRows();
     }
 
     private void UpdateComputer2Visibility()
@@ -575,6 +673,145 @@ public partial class MainWindow : Window
         Computer2WslCheckBox.Visibility = Computer2OsComboBox.SelectedItem is OperatingSystemKind.Windows ? Visibility.Visible : Visibility.Collapsed;
         VerboseLogger.Info($"WSL checkbox visibility updated. Computer1={Computer1WslCheckBox.Visibility}, Computer2={Computer2WslCheckBox.Visibility}.");
     }
+
+    private void UpdateAccessModeVisibility()
+    {
+        UpdateSingleAccessModeVisibility(
+            Computer1AccessModeComboBox.SelectedValue is AccessMode accessMode1 ? accessMode1 : AccessMode.DirectLocal,
+            Computer1AccessHostLabel,
+            Computer1AccessHostTextBox,
+            Computer1SshDetailsPanel);
+
+        UpdateSingleAccessModeVisibility(
+            Computer2AccessModeComboBox.SelectedValue is AccessMode accessMode2 ? accessMode2 : AccessMode.DirectLocal,
+            Computer2AccessHostLabel,
+            Computer2AccessHostTextBox,
+            Computer2SshDetailsPanel);
+    }
+
+    private static void UpdateSingleAccessModeVisibility(
+        AccessMode mode,
+        UIElement hostLabel,
+        UIElement hostTextBox,
+        UIElement sshDetailsPanel)
+    {
+        var needsHost = mode is AccessMode.Tailscale or AccessMode.Ssh;
+        hostLabel.Visibility = needsHost ? Visibility.Visible : Visibility.Collapsed;
+        hostTextBox.Visibility = needsHost ? Visibility.Visible : Visibility.Collapsed;
+        sshDetailsPanel.Visibility = mode == AccessMode.Ssh ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    private async Task<List<ValidationRecord>> RunAllValidationsAsync()
+    {
+        PopulateStateFromControls();
+        _state.ValidationResults.Clear();
+        _state.ValidationResults.Add(ValidationService.ClassifyTopology(_state));
+        _state.ValidationResults.Add(_validationService.ValidateDeploymentModel(_state));
+        _state.ValidationResults.Add(_validationService.ValidateConnectivity(_state.Connectivity));
+        _state.ValidationResults.Add(await _validationService.ValidateAlpacaPaperAsync(_state.AlpacaPaper));
+        _state.ValidationResults.Add(await _validationService.ValidateTelegramAsync(_state.Telegram));
+        _state.ValidationResults.Add(await _validationService.ValidateAgentMailAsync(_state.AgentMail));
+        _state.ValidationResults.Add(await _validationService.ValidateHermesAiProviderAsync(_state.HermesAiProvider));
+        _state.ValidationResults.Add(await _validationService.ValidateAlpacaLiveAsync(_state.AlpacaLive));
+        return _state.ValidationResults;
+    }
+
+    private void SyncAiProviderSelectionFromRows()
+    {
+        var backendRow = _targetRows.FirstOrDefault(row => row.IsAuthoritativeBackend || row.HermesBackend);
+        if (backendRow is not null && AiProviderComboBox is not null && AiProviderServicesComboBox is not null)
+        {
+            var provider = HermesProviderCatalog.Find(string.IsNullOrWhiteSpace(backendRow.AiProviderKey)
+                ? _state.HermesAiProvider.ProviderKey
+                : backendRow.AiProviderKey);
+            AiProviderComboBox.SelectedItem = provider;
+            AiProviderServicesComboBox.SelectedItem = provider;
+        }
+    }
+
+    private void SyncAiProviderSelectionToRows()
+    {
+        var providerKey = GetSelectedProviderKey();
+        if (string.IsNullOrWhiteSpace(providerKey))
+        {
+            return;
+        }
+
+        foreach (var row in _targetRows)
+        {
+            row.AiProviderKey = row.HermesBackend || row.IsAuthoritativeBackend ? providerKey : string.Empty;
+        }
+    }
+
+    private void UpdateAiProviderUi()
+    {
+        if (AiProviderComboBox is null ||
+            AiProviderServicesComboBox is null ||
+            AiProviderBaseUrlLabel is null ||
+            AiProviderModelLabel is null ||
+            AiProviderApiKeyLabel is null ||
+            AiProviderHelperTextBlock is null)
+        {
+            return;
+        }
+
+        var provider = GetSelectedProviderOption();
+        AiProviderGroupBox.Header = $"{provider.DisplayName} Configuration";
+        AiProviderBaseUrlLabel.Text = provider.BaseUrlLabel;
+        AiProviderModelLabel.Text = provider.ModelLabel;
+        AiProviderApiKeyLabel.Text = provider.ApiKeyLabel;
+        AiProviderHelperTextBlock.Text = provider.HelperText;
+        AiProviderTargetsTextBlock.Text = $"Selected backend provider: {provider.DisplayName}";
+
+        if (ShouldReplaceProviderBaseUrl(AiProviderBaseUrlTextBox.Text))
+        {
+            AiProviderBaseUrlTextBox.Text = provider.DefaultBaseUrl;
+        }
+    }
+
+    private void SyncProviderComboSelections(ComboBox source)
+    {
+        if (source.SelectedItem is not HermesProviderOption provider)
+        {
+            return;
+        }
+
+        if (!Equals(AiProviderComboBox.SelectedItem, provider))
+        {
+            AiProviderComboBox.SelectedItem = provider;
+        }
+
+        if (!Equals(AiProviderServicesComboBox.SelectedItem, provider))
+        {
+            AiProviderServicesComboBox.SelectedItem = provider;
+        }
+    }
+
+    private static bool ShouldReplaceProviderBaseUrl(string currentValue)
+    {
+        var trimmed = currentValue.Trim();
+        if (string.IsNullOrWhiteSpace(trimmed))
+        {
+            return true;
+        }
+
+        return HermesProviderCatalog.All
+            .Select(provider => provider.DefaultBaseUrl)
+            .Where(value => !string.IsNullOrWhiteSpace(value))
+            .Any(defaultValue => string.Equals(trimmed, defaultValue, StringComparison.OrdinalIgnoreCase));
+    }
+
+    private HermesProviderOption GetSelectedProviderOption()
+    {
+        if (AiProviderComboBox?.SelectedItem is HermesProviderOption provider)
+        {
+            return provider;
+        }
+
+        return HermesProviderCatalog.Find(_state.HermesAiProvider.ProviderKey);
+    }
+
+    private string GetSelectedProviderKey() => GetSelectedProviderOption().Key;
 
     private void CashAllocationMode_OnChecked(object sender, RoutedEventArgs e)
     {
@@ -759,6 +996,84 @@ public partial class MainWindow : Window
         return int.TryParse(input, NumberStyles.Integer, CultureInfo.InvariantCulture, out var value) && value > 0
             ? value
             : defaultValue;
+    }
+
+    private void LoadServicePlacementRows()
+    {
+        LoadServicePlacementRows(_computer1ServiceRows, _state.Computers.ElementAtOrDefault(0));
+        LoadServicePlacementRows(_computer2ServiceRows, _state.Computers.ElementAtOrDefault(1));
+    }
+
+    private static void LoadServicePlacementRows(ObservableCollection<ComputerServicePlacementRow> rows, ComputerDefinition? computer)
+    {
+        rows.Clear();
+        var placements = computer?.ServicePlacements ?? [];
+        foreach (var service in DeploymentCatalog.SupportedServices)
+        {
+            var placement = placements.FirstOrDefault(item => item.Service == service)?.PlacementMode
+                ?? ServicePlacementMode.NotOnThisComputer;
+            rows.Add(new ComputerServicePlacementRow
+            {
+                ServiceKind = service,
+                DisplayName = DeploymentCatalog.GetServiceDisplayName(service),
+                PlacementMode = placement,
+            });
+        }
+    }
+
+    private static List<ServicePlacement> BuildServicePlacements(IEnumerable<ComputerServicePlacementRow> rows) =>
+        rows.Select(row => new ServicePlacement
+        {
+            Service = row.ServiceKind,
+            PlacementMode = row.PlacementMode,
+        }).ToList();
+
+    private void RefreshDeploymentModelDefaults()
+    {
+        if (RequiresTailscaleCheckBox is null ||
+            ComputerCountComboBox is null ||
+            Computer1PlacementGroupBox is null ||
+            Computer2PlacementGroupBox is null ||
+            Computer1LabelTextBox is null ||
+            Computer2LabelTextBox is null)
+        {
+            VerboseLogger.Warn("Skipped deployment model refresh because placement controls are not initialized yet.");
+            return;
+        }
+
+        var draftState = new WizardState
+        {
+            Computers = BuildComputersFromControls(),
+            Targets = BuildTargetsFromRows(),
+            Connectivity = new ConnectivityConfiguration
+            {
+                RequiresTailscale = RequiresTailscaleCheckBox.IsChecked == true,
+            }
+        };
+
+        TopologyService.ApplyDefaultDeploymentModel(draftState);
+        _state.Computers = draftState.Computers;
+        LoadServicePlacementRows();
+        UpdateServicePlacementVisibility();
+    }
+
+    private void UpdateServicePlacementVisibility()
+    {
+        if (Computer1LabelTextBox is null ||
+            Computer2LabelTextBox is null ||
+            Computer1PlacementGroupBox is null ||
+            Computer2PlacementGroupBox is null ||
+            ComputerCountComboBox is null)
+        {
+            VerboseLogger.Warn("Skipped service placement visibility update because placement controls are not initialized yet.");
+            return;
+        }
+
+        var computer1Label = string.IsNullOrWhiteSpace(Computer1LabelTextBox.Text) ? "Computer 1" : Computer1LabelTextBox.Text.Trim();
+        var computer2Label = string.IsNullOrWhiteSpace(Computer2LabelTextBox.Text) ? "Computer 2" : Computer2LabelTextBox.Text.Trim();
+        Computer1PlacementGroupBox.Header = $"{computer1Label} Service Placement";
+        Computer2PlacementGroupBox.Visibility = ComputerCountComboBox.SelectedIndex == 1 ? Visibility.Visible : Visibility.Collapsed;
+        Computer2PlacementGroupBox.Header = $"{computer2Label} Service Placement";
     }
 
     private void AppendLog(string message)

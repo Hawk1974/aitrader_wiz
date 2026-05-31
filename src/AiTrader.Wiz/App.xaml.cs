@@ -26,7 +26,7 @@ public partial class App : System.Windows.Application
         {
             VerboseLogger.Error("Fatal exception during startup.", ex);
             MessageBox.Show(
-                $"AlTrader Config Wizard failed during startup.{Environment.NewLine}{Environment.NewLine}Log file:{Environment.NewLine}{VerboseLogger.CurrentLogPath}",
+                $"AlTrader Config Wizard failed during startup.{Environment.NewLine}{Environment.NewLine}Log file:{Environment.NewLine}{VerboseLogger.CurrentLogDisplayPath}",
                 "AlTrader Config Wizard Startup Failure",
                 MessageBoxButton.OK,
                 MessageBoxImage.Error);
@@ -44,7 +44,7 @@ public partial class App : System.Windows.Application
     {
         VerboseLogger.Error("Unhandled dispatcher exception.", e.Exception);
         MessageBox.Show(
-            $"AlTrader Config Wizard encountered an unexpected error.{Environment.NewLine}{Environment.NewLine}Log file:{Environment.NewLine}{VerboseLogger.CurrentLogPath}",
+            $"AlTrader Config Wizard encountered an unexpected error.{Environment.NewLine}{Environment.NewLine}Log file:{Environment.NewLine}{VerboseLogger.CurrentLogDisplayPath}",
             "AlTrader Config Wizard Error",
             MessageBoxButton.OK,
             MessageBoxImage.Error);

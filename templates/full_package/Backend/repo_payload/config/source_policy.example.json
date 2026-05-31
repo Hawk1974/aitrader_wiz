@@ -1,0 +1,23 @@
+{
+  "schema_version": "1.0.0",
+  "source_name": "capitol_trades",
+  "enabled": true,
+  "poll_interval_minutes": 30,
+  "endpoint": "https://www.capitoltrades.com/trades",
+  "rate_limit_policy": {
+    "max_requests_per_poll": 1,
+    "retry_count": 3,
+    "backoff_seconds": [5, 30, 120]
+  },
+  "pagination": {
+    "enabled": true,
+    "cursor_state_path": "data/state/capitol_trades_cursor.json"
+  },
+  "deduplication": {
+    "raw_event_key_formula": "sha256(source_name + source_record_id + disclosed_date + raw_payload_hash)"
+  },
+  "stale_source_policy": {
+    "max_source_age_minutes": 90,
+    "on_stale": "warn_and_report_no_trade"
+  }
+}
