@@ -28,6 +28,7 @@ public partial class MainWindow : Window
     private bool _hasPassingFullValidation;
     private bool _summaryApproved;
     private int _lastWizardTabIndex;
+    private bool _isNormalizingTargetRows;
 
     public MainWindow()
     {
@@ -368,6 +369,11 @@ public partial class MainWindow : Window
     private void RebuildTargetRows()
     {
         VerboseLogger.Info("Rebuilding runtime target rows.");
+        foreach (var row in _targetRows)
+        {
+            row.PropertyChanged -= TargetRow_OnPropertyChanged;
+        }
+
         var currentSelections = _targetRows.ToDictionary(
             row => row.TargetId,
             row => row);
@@ -388,7 +394,7 @@ public partial class MainWindow : Window
         foreach (var target in defaultState.Targets)
         {
             currentSelections.TryGetValue(target.Id, out var existing);
-            _targetRows.Add(new TargetAssignmentRow
+            var row = new TargetAssignmentRow
             {
                 TargetId = target.Id,
                 DisplayName = target.DisplayName,
@@ -398,8 +404,12 @@ public partial class MainWindow : Window
                 IsPrimaryDesktop = existing?.IsPrimaryDesktop ?? target.IsPrimaryDesktop,
                 IsAuthoritativeBackend = existing?.IsAuthoritativeBackend ?? target.IsAuthoritativeBackend,
                 AiProviderKey = existing?.AiProviderKey ?? _state.HermesAiProvider.ProviderKey,
-            });
+            };
+            row.PropertyChanged += TargetRow_OnPropertyChanged;
+            _targetRows.Add(row);
         }
+
+        NormalizeTargetRows(applyDefaultsIfMissing: true);
         VerboseLogger.Info($"Runtime target rows rebuilt. Count={_targetRows.Count}.");
         SyncAiProviderSelectionFromRows();
         RefreshDeploymentModelDefaults();
@@ -751,8 +761,20 @@ public partial class MainWindow : Window
             return;
         }
 
-        Computer1WslCheckBox.Visibility = Computer1OsComboBox.SelectedItem is OperatingSystemKind.Windows ? Visibility.Visible : Visibility.Collapsed;
-        Computer2WslCheckBox.Visibility = Computer2OsComboBox.SelectedItem is OperatingSystemKind.Windows ? Visibility.Visible : Visibility.Collapsed;
+        var computer1IsWindows = Computer1OsComboBox.SelectedItem is OperatingSystemKind.Windows;
+        var computer2IsWindows = Computer2OsComboBox.SelectedItem is OperatingSystemKind.Windows;
+        Computer1WslCheckBox.Visibility = computer1IsWindows ? Visibility.Visible : Visibility.Collapsed;
+        Computer2WslCheckBox.Visibility = computer2IsWindows ? Visibility.Visible : Visibility.Collapsed;
+        if (!computer1IsWindows)
+        {
+            Computer1WslCheckBox.IsChecked = false;
+        }
+
+        if (!computer2IsWindows)
+        {
+            Computer2WslCheckBox.IsChecked = false;
+        }
+
         VerboseLogger.Info($"WSL checkbox visibility updated. Computer1={Computer1WslCheckBox.Visibility}, Computer2={Computer2WslCheckBox.Visibility}.");
     }
 
@@ -1344,6 +1366,131 @@ public partial class MainWindow : Window
         Computer1PlacementGroupBox.Header = $"{computer1Label} Service Placement";
         Computer2PlacementGroupBox.Visibility = ComputerCountComboBox.SelectedIndex == 1 ? Visibility.Visible : Visibility.Collapsed;
         Computer2PlacementGroupBox.Header = $"{computer2Label} Service Placement";
+    }
+
+    private void TargetRow_OnPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (!_uiInitialized || _isNormalizingTargetRows)
+        {
+            return;
+        }
+
+        if (e.PropertyName is nameof(TargetAssignmentRow.HermesBackend) or
+            nameof(TargetAssignmentRow.HermesDesktop) or
+            nameof(TargetAssignmentRow.IsPrimaryDesktop) or
+            nameof(TargetAssignmentRow.IsAuthoritativeBackend))
+        {
+            NormalizeTargetRows(applyDefaultsIfMissing: false);
+            SyncAiProviderSelectionFromRows();
+            RefreshDeploymentModelDefaults();
+            MarkValidationStateDirty(logChange: false);
+        }
+    }
+
+    private void NormalizeTargetRows(bool applyDefaultsIfMissing)
+    {
+        if (_isNormalizingTargetRows)
+        {
+            return;
+        }
+
+        _isNormalizingTargetRows = true;
+        try
+        {
+            foreach (var row in _targetRows)
+            {
+                if (!TopologyService.IsBackendCompatible(row.Kind))
+                {
+                    row.HermesBackend = false;
+                    row.IsAuthoritativeBackend = false;
+                }
+
+                if (!TopologyService.IsDesktopCompatible(row.Kind))
+                {
+                    row.HermesDesktop = false;
+                    row.IsPrimaryDesktop = false;
+                }
+
+                if (row.IsAuthoritativeBackend)
+                {
+                    row.HermesBackend = true;
+                }
+
+                if (!row.HermesBackend)
+                {
+                    row.IsAuthoritativeBackend = false;
+                }
+
+                if (row.IsPrimaryDesktop)
+                {
+                    row.HermesDesktop = true;
+                }
+
+                if (!row.HermesDesktop)
+                {
+                    row.IsPrimaryDesktop = false;
+                }
+            }
+
+            foreach (var row in _targetRows.Where(item => item.IsAuthoritativeBackend).Skip(1))
+            {
+                row.IsAuthoritativeBackend = false;
+            }
+
+            foreach (var row in _targetRows.Where(item => item.IsPrimaryDesktop).Skip(1))
+            {
+                row.IsPrimaryDesktop = false;
+            }
+
+            foreach (var row in _targetRows.Where(item => item.HermesBackend).Skip(1))
+            {
+                row.HermesBackend = false;
+                row.IsAuthoritativeBackend = false;
+            }
+
+            foreach (var row in _targetRows.Where(item => item.HermesDesktop).Skip(1))
+            {
+                row.HermesDesktop = false;
+                row.IsPrimaryDesktop = false;
+            }
+
+            if (applyDefaultsIfMissing)
+            {
+                if (!_targetRows.Any(row => row.HermesBackend))
+                {
+                    var backendRow = _targetRows.FirstOrDefault(row => row.Kind == RuntimeTargetKind.Wsl)
+                        ?? _targetRows.FirstOrDefault(row => TopologyService.IsBackendCompatible(row.Kind));
+                    if (backendRow is not null)
+                    {
+                        backendRow.HermesBackend = true;
+                        backendRow.IsAuthoritativeBackend = true;
+                    }
+                }
+                else if (!_targetRows.Any(row => row.IsAuthoritativeBackend))
+                {
+                    _targetRows.First(row => row.HermesBackend).IsAuthoritativeBackend = true;
+                }
+
+                if (!_targetRows.Any(row => row.HermesDesktop))
+                {
+                    var desktopRow = _targetRows.FirstOrDefault(row => row.Kind == RuntimeTargetKind.Windows)
+                        ?? _targetRows.FirstOrDefault(row => TopologyService.IsDesktopCompatible(row.Kind));
+                    if (desktopRow is not null)
+                    {
+                        desktopRow.HermesDesktop = true;
+                        desktopRow.IsPrimaryDesktop = true;
+                    }
+                }
+                else if (!_targetRows.Any(row => row.IsPrimaryDesktop))
+                {
+                    _targetRows.First(row => row.HermesDesktop).IsPrimaryDesktop = true;
+                }
+            }
+        }
+        finally
+        {
+            _isNormalizingTargetRows = false;
+        }
     }
 
     private void AppendLog(string message)

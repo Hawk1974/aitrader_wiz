@@ -97,6 +97,94 @@ public sealed class TopologyServiceTests
         Assert.True(wslTarget.IsAuthoritativeBackend);
     }
 
+    [Fact]
+    public void NormalizeTargetAssignments_RemovesIncompatibleRolesAndFlags()
+    {
+        var targets = new List<RuntimeTarget>
+        {
+            new()
+            {
+                Id = "windows",
+                DisplayName = "Windows",
+                Kind = RuntimeTargetKind.Windows,
+                ComputerId = "computer_1",
+                Roles = [RoleKind.HermesBackend, RoleKind.HermesDesktop],
+                IsPrimaryDesktop = true,
+                IsAuthoritativeBackend = true,
+            },
+            new()
+            {
+                Id = "wsl",
+                DisplayName = "WSL",
+                Kind = RuntimeTargetKind.Wsl,
+                ComputerId = "computer_1",
+                Roles = [RoleKind.HermesBackend, RoleKind.HermesDesktop],
+                IsPrimaryDesktop = true,
+                IsAuthoritativeBackend = true,
+            }
+        };
+
+        TopologyService.NormalizeTargetAssignments(targets);
+
+        var windowsTarget = targets[0];
+        var wslTarget = targets[1];
+        Assert.DoesNotContain(RoleKind.HermesBackend, windowsTarget.Roles);
+        Assert.False(windowsTarget.IsAuthoritativeBackend);
+        Assert.DoesNotContain(RoleKind.HermesDesktop, wslTarget.Roles);
+        Assert.False(wslTarget.IsPrimaryDesktop);
+    }
+
+    [Fact]
+    public void NormalizeTargetAssignments_KeepsOnlyOneBackendAndOneDesktopRole()
+    {
+        var targets = new List<RuntimeTarget>
+        {
+            new()
+            {
+                Id = "wsl",
+                DisplayName = "WSL",
+                Kind = RuntimeTargetKind.Wsl,
+                ComputerId = "computer_1",
+                Roles = [RoleKind.HermesBackend],
+                IsAuthoritativeBackend = true,
+            },
+            new()
+            {
+                Id = "linux",
+                DisplayName = "Linux",
+                Kind = RuntimeTargetKind.Linux,
+                ComputerId = "computer_2",
+                Roles = [RoleKind.HermesBackend],
+                IsAuthoritativeBackend = true,
+            },
+            new()
+            {
+                Id = "windows",
+                DisplayName = "Windows",
+                Kind = RuntimeTargetKind.Windows,
+                ComputerId = "computer_1",
+                Roles = [RoleKind.HermesDesktop],
+                IsPrimaryDesktop = true,
+            },
+            new()
+            {
+                Id = "mac",
+                DisplayName = "macOS",
+                Kind = RuntimeTargetKind.MacOs,
+                ComputerId = "computer_3",
+                Roles = [RoleKind.HermesDesktop],
+                IsPrimaryDesktop = true,
+            }
+        };
+
+        TopologyService.NormalizeTargetAssignments(targets);
+
+        Assert.Single(targets.Where(target => target.Roles.Contains(RoleKind.HermesBackend)));
+        Assert.Single(targets.Where(target => target.Roles.Contains(RoleKind.HermesDesktop)));
+        Assert.Single(targets.Where(target => target.IsAuthoritativeBackend));
+        Assert.Single(targets.Where(target => target.IsPrimaryDesktop));
+    }
+
     private static WizardState BuildValidState()
     {
         return new WizardState

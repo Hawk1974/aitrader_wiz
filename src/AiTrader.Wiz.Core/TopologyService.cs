@@ -161,6 +161,72 @@ public static class TopologyService
             desktopTarget.Roles.Add(RoleKind.HermesDesktop);
             desktopTarget.IsPrimaryDesktop = true;
         }
+
+        NormalizeTargetAssignments(state.Targets);
+    }
+
+    public static void NormalizeTargetAssignments(IList<RuntimeTarget> targets)
+    {
+        foreach (var target in targets)
+        {
+            if (!IsBackendCompatible(target.Kind))
+            {
+                target.Roles.Remove(RoleKind.HermesBackend);
+                target.IsAuthoritativeBackend = false;
+            }
+
+            if (!IsDesktopCompatible(target.Kind))
+            {
+                target.Roles.Remove(RoleKind.HermesDesktop);
+                target.IsPrimaryDesktop = false;
+            }
+
+            if (target.IsAuthoritativeBackend && !target.Roles.Contains(RoleKind.HermesBackend))
+            {
+                target.Roles.Add(RoleKind.HermesBackend);
+            }
+
+            if (!target.Roles.Contains(RoleKind.HermesBackend))
+            {
+                target.IsAuthoritativeBackend = false;
+            }
+
+            if (target.IsPrimaryDesktop && !target.Roles.Contains(RoleKind.HermesDesktop))
+            {
+                target.Roles.Add(RoleKind.HermesDesktop);
+            }
+
+            if (!target.Roles.Contains(RoleKind.HermesDesktop))
+            {
+                target.IsPrimaryDesktop = false;
+            }
+        }
+
+        var backendTargets = targets.Where(target => target.Roles.Contains(RoleKind.HermesBackend)).ToList();
+        for (var index = 1; index < backendTargets.Count; index++)
+        {
+            backendTargets[index].Roles.Remove(RoleKind.HermesBackend);
+            backendTargets[index].IsAuthoritativeBackend = false;
+        }
+
+        var desktopTargets = targets.Where(target => target.Roles.Contains(RoleKind.HermesDesktop)).ToList();
+        for (var index = 1; index < desktopTargets.Count; index++)
+        {
+            desktopTargets[index].Roles.Remove(RoleKind.HermesDesktop);
+            desktopTargets[index].IsPrimaryDesktop = false;
+        }
+
+        var authoritativeTargets = targets.Where(target => target.IsAuthoritativeBackend).ToList();
+        for (var index = 1; index < authoritativeTargets.Count; index++)
+        {
+            authoritativeTargets[index].IsAuthoritativeBackend = false;
+        }
+
+        var primaryDesktopTargets = targets.Where(target => target.IsPrimaryDesktop).ToList();
+        for (var index = 1; index < primaryDesktopTargets.Count; index++)
+        {
+            primaryDesktopTargets[index].IsPrimaryDesktop = false;
+        }
     }
 
     private static ServicePlacementMode DefaultBackendServicePlacement(ComputerDefinition computer) =>
