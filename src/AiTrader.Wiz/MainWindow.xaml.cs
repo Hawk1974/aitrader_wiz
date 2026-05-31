@@ -7,6 +7,7 @@ using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Interop;
+using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using Microsoft.Win32;
 
@@ -22,12 +23,17 @@ public partial class MainWindow : Window
     private readonly ValidationService _validationService = new(new HttpClient());
     private WizardState _state = WizardStateFactory.CreateDefault();
     private bool _isSynchronizingCashInputs;
+    private bool _isLoadingState;
     private bool _uiInitialized;
+    private bool _hasPassingFullValidation;
+    private bool _summaryApproved;
+    private int _lastWizardTabIndex;
 
     public MainWindow()
     {
         VerboseLogger.Info("MainWindow constructor entered.");
         InitializeComponent();
+        RegisterGlobalChangeTracking();
         InitializeWindowIcon();
         TargetsDataGrid.ItemsSource = _targetRows;
         Computer1ServicePlacementDataGrid.ItemsSource = _computer1ServiceRows;
@@ -35,8 +41,19 @@ public partial class MainWindow : Window
         InitializeOsSelectors();
         LoadStateIntoControls();
         _uiInitialized = true;
+        _lastWizardTabIndex = WizardTabs.SelectedIndex;
+        UpdateApprovalAndExportUi();
         AppendLog($"Verbose log file: {VerboseLogger.CurrentLogDisplayPath}");
         VerboseLogger.Info("MainWindow constructor completed.");
+    }
+
+    private void RegisterGlobalChangeTracking()
+    {
+        AddHandler(TextBox.TextChangedEvent, new TextChangedEventHandler(AnyWizardTextChanged));
+        AddHandler(Selector.SelectionChangedEvent, new SelectionChangedEventHandler(AnyWizardSelectionChanged));
+        AddHandler(ToggleButton.CheckedEvent, new RoutedEventHandler(AnyWizardToggleChanged));
+        AddHandler(ToggleButton.UncheckedEvent, new RoutedEventHandler(AnyWizardToggleChanged));
+        AddHandler(SecretFieldControl.ValueChangedEvent, new RoutedEventHandler(AnyWizardToggleChanged));
     }
 
     private void InitializeWindowIcon()
@@ -77,6 +94,7 @@ public partial class MainWindow : Window
     private void LoadStateIntoControls()
     {
         VerboseLogger.Info("Loading wizard state into UI controls.");
+        _isLoadingState = true;
         ClientNameTextBox.Text = _state.ClientIdentity.ClientName;
         MainContactNameTextBox.Text = _state.ClientIdentity.MainContactName;
         MainContactEmailTextBox.Text = _state.ClientIdentity.MainContactEmail;
@@ -152,6 +170,11 @@ public partial class MainWindow : Window
         UpdateAccessModeVisibility();
         UpdateServicePlacementVisibility();
         UpdateAiProviderUi();
+        UpdateServiceTestButtonState();
+        UpdateApprovalHistoryDisplay();
+        RefreshApprovalSummary();
+        _isLoadingState = false;
+        MarkValidationStateDirty(logChange: false);
         VerboseLogger.Info("Wizard state loaded into UI controls.");
     }
 
@@ -349,9 +372,20 @@ public partial class MainWindow : Window
             row => row.TargetId,
             row => row);
 
-        var derivedTargets = TopologyService.DeriveTargets(BuildComputersFromControls());
+        var computers = BuildComputersFromControls();
+        var defaultState = new WizardState
+        {
+            Computers = computers,
+            Targets = TopologyService.DeriveTargets(computers),
+            HermesAiProvider = new HermesAiProviderConfiguration
+            {
+                ProviderKey = _state.HermesAiProvider.ProviderKey,
+            }
+        };
+        TopologyService.ApplyDefaultTargetAssignments(defaultState);
+
         _targetRows.Clear();
-        foreach (var target in derivedTargets)
+        foreach (var target in defaultState.Targets)
         {
             currentSelections.TryGetValue(target.Id, out var existing);
             _targetRows.Add(new TargetAssignmentRow
@@ -359,10 +393,10 @@ public partial class MainWindow : Window
                 TargetId = target.Id,
                 DisplayName = target.DisplayName,
                 Kind = target.Kind,
-                HermesBackend = existing?.HermesBackend ?? false,
-                HermesDesktop = existing?.HermesDesktop ?? false,
-                IsPrimaryDesktop = existing?.IsPrimaryDesktop ?? false,
-                IsAuthoritativeBackend = existing?.IsAuthoritativeBackend ?? false,
+                HermesBackend = existing?.HermesBackend ?? target.Roles.Contains(RoleKind.HermesBackend),
+                HermesDesktop = existing?.HermesDesktop ?? target.Roles.Contains(RoleKind.HermesDesktop),
+                IsPrimaryDesktop = existing?.IsPrimaryDesktop ?? target.IsPrimaryDesktop,
+                IsAuthoritativeBackend = existing?.IsAuthoritativeBackend ?? target.IsAuthoritativeBackend,
                 AiProviderKey = existing?.AiProviderKey ?? _state.HermesAiProvider.ProviderKey,
             });
         }
@@ -397,6 +431,10 @@ public partial class MainWindow : Window
         try
         {
             var results = await RunAllValidationsAsync();
+            _hasPassingFullValidation = results.All(record => record.Status != ValidationStatus.FailedBlocking);
+            _summaryApproved = false;
+            RefreshApprovalSummary();
+            UpdateApprovalAndExportUi();
 
             AppendLog("Validation results:");
             foreach (var record in results)
@@ -420,8 +458,8 @@ public partial class MainWindow : Window
         {
             PopulateStateFromControls();
             DraftStorage.Save(_state);
-            AppendLog("Encrypted local draft saved.");
-            VerboseLogger.Info("Encrypted local draft saved successfully.");
+            AppendLog("Encrypted local non-secret draft saved.");
+            VerboseLogger.Info("Encrypted local non-secret draft saved successfully.");
         }
         catch (Exception ex)
         {
@@ -446,8 +484,8 @@ public partial class MainWindow : Window
 
             _state = loaded;
             LoadStateIntoControls();
-            AppendLog("Encrypted local draft loaded.");
-            VerboseLogger.Info("Encrypted local draft loaded successfully.");
+            AppendLog("Encrypted local non-secret draft loaded. Secret fields were intentionally left blank.");
+            VerboseLogger.Info("Encrypted local non-secret draft loaded successfully.");
         }
         catch (Exception ex)
         {
@@ -463,7 +501,9 @@ public partial class MainWindow : Window
         try
         {
             DraftStorage.Wipe();
-            AppendLog("Local draft wiped.");
+            _state = WizardStateFactory.CreateDefault();
+            LoadStateIntoControls();
+            AppendLog("Local draft wiped and current wizard values reset to defaults.");
             VerboseLogger.Info("Local draft wiped successfully.");
         }
         catch (Exception ex)
@@ -479,6 +519,18 @@ public partial class MainWindow : Window
         VerboseLogger.Info("Export button clicked.");
         try
         {
+            if (!_hasPassingFullValidation)
+            {
+                AppendLog("Export blocked: run validations and resolve all blocking issues before export.");
+                return;
+            }
+
+            if (!_summaryApproved)
+            {
+                AppendLog("Export blocked: approve the redacted summary on Tab 8 before export.");
+                return;
+            }
+
             PopulateStateFromControls();
             var validationResults = RunAllValidationsAsync().GetAwaiter().GetResult();
             var blocking = validationResults.Where(record => record.Status == ValidationStatus.FailedBlocking).ToList();
@@ -552,6 +604,12 @@ public partial class MainWindow : Window
 
     private void NextButton_OnClick(object sender, RoutedEventArgs e)
     {
+        if (WizardTabs.SelectedIndex == GetReviewTabIndex() && !_hasPassingFullValidation)
+        {
+            AppendLog("Tab 8 remains unavailable until all validations pass without blocking issues.");
+            return;
+        }
+
         if (WizardTabs.SelectedIndex < WizardTabs.Items.Count - 1)
         {
             WizardTabs.SelectedIndex += 1;
@@ -623,6 +681,30 @@ public partial class MainWindow : Window
         RebuildTargetRows();
         AppendLog("Runtime targets re-derived from the current computer selections.");
         WizardTabs.SelectedIndex = 2;
+    }
+
+    private void WizardTabs_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (!ReferenceEquals(sender, WizardTabs) || e.Source != WizardTabs)
+        {
+            return;
+        }
+
+        if (WizardTabs.SelectedItem == ApprovalTab && !_hasPassingFullValidation)
+        {
+            WizardTabs.SelectedIndex = Math.Clamp(_lastWizardTabIndex, 0, WizardTabs.Items.Count - 1);
+            AppendLog("Approval + Export is unavailable until validations pass without blocking issues.");
+            return;
+        }
+
+        _lastWizardTabIndex = WizardTabs.SelectedIndex;
+        if (WizardTabs.SelectedItem == ApprovalTab)
+        {
+            RefreshApprovalSummary();
+            UpdateApprovalHistoryDisplay();
+        }
+
+        UpdateNavigationButtons();
     }
 
     private void AiProviderComboBox_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -706,6 +788,7 @@ public partial class MainWindow : Window
         PopulateStateFromControls();
         _state.ValidationResults.Clear();
         _state.ValidationResults.Add(ValidationService.ClassifyTopology(_state));
+        _state.ValidationResults.Add(_validationService.ValidateInputConventions(_state));
         _state.ValidationResults.Add(_validationService.ValidateDeploymentModel(_state));
         _state.ValidationResults.Add(_validationService.ValidateConnectivity(_state.Connectivity));
         _state.ValidationResults.Add(await _validationService.ValidateAlpacaPaperAsync(_state.AlpacaPaper));
@@ -714,6 +797,193 @@ public partial class MainWindow : Window
         _state.ValidationResults.Add(await _validationService.ValidateHermesAiProviderAsync(_state.HermesAiProvider));
         _state.ValidationResults.Add(await _validationService.ValidateAlpacaLiveAsync(_state.AlpacaLive));
         return _state.ValidationResults;
+    }
+
+    private void ApproveSummaryButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (!_hasPassingFullValidation)
+        {
+            AppendLog("Approval blocked: validations must pass before the summary can be approved.");
+            return;
+        }
+
+        RefreshApprovalSummary();
+        var confirmation = PromptForApprovalConfirmation();
+        if (!string.Equals(confirmation, "APPROVE", StringComparison.Ordinal))
+        {
+            AppendLog("Summary approval cancelled or rejected. Exact word APPROVE was not entered.");
+            return;
+        }
+
+        PopulateStateFromControls();
+        var summaryText = RenderingService.RenderApprovalSummary(_state);
+        var record = ApprovalHistoryStorage.RecordApproval(_state, summaryText);
+        _summaryApproved = true;
+        UpdateApprovalHistoryDisplay();
+        UpdateApprovalAndExportUi();
+        AppendLog($"Summary approved and recorded locally at {record.TimestampUtc} UTC.");
+    }
+
+    private async void AiProviderTestButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        await RunSectionValidationAsync(
+            sender as Button,
+            AiProviderTestResultTextBlock,
+            "Hermes AI Provider",
+            () => _validationService.ValidateHermesAiProviderAsync(_state.HermesAiProvider));
+    }
+
+    private async void AlpacaPaperTestButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        await RunSectionValidationAsync(
+            sender as Button,
+            AlpacaPaperTestResultTextBlock,
+            "Alpaca Paper",
+            () => _validationService.ValidateAlpacaPaperAsync(_state.AlpacaPaper));
+    }
+
+    private async void TelegramTestButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        await RunSectionValidationAsync(
+            sender as Button,
+            TelegramTestResultTextBlock,
+            "Telegram",
+            () => _validationService.ValidateTelegramAsync(_state.Telegram));
+    }
+
+    private async void AgentMailTestButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        await RunSectionValidationAsync(
+            sender as Button,
+            AgentMailTestResultTextBlock,
+            "AgentMail",
+            () => _validationService.ValidateAgentMailAsync(_state.AgentMail));
+    }
+
+    private async void AlpacaLiveTestButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        await RunSectionValidationAsync(
+            sender as Button,
+            AlpacaLiveTestResultTextBlock,
+            "Optional Alpaca Live",
+            () => _validationService.ValidateAlpacaLiveAsync(_state.AlpacaLive));
+    }
+
+    private void AlpacaLiveEnabledCheckBox_OnChanged(object sender, RoutedEventArgs e)
+    {
+        if (!_uiInitialized)
+        {
+            return;
+        }
+
+        UpdateServiceTestButtonState();
+    }
+
+    private async Task RunSectionValidationAsync(
+        Button? button,
+        TextBlock? resultTextBlock,
+        string sectionName,
+        Func<Task<ValidationRecord>> validateAsync)
+    {
+        if (button is null || resultTextBlock is null)
+        {
+            return;
+        }
+
+        PopulateStateFromControls();
+        button.IsEnabled = false;
+        SetSectionValidationResult(resultTextBlock, sectionName, null, "Running section test...");
+        AppendLog($"{sectionName}: running section test...");
+
+        try
+        {
+            var result = await validateAsync();
+            SetSectionValidationResult(resultTextBlock, sectionName, result);
+            AppendLog($"{sectionName}: {result.Status} - {result.Message}");
+            VerboseLogger.Info($"{sectionName} section test result: {result.Status} :: {result.Message}");
+        }
+        catch (Exception ex)
+        {
+            SetSectionValidationResult(resultTextBlock, sectionName, null, $"Latest section test result: FailedBlocking - {ex.Message}");
+            AppendLog($"{sectionName}: FailedBlocking - {ex.Message}");
+            VerboseLogger.Error($"{sectionName} section test failed.", ex);
+            throw;
+        }
+        finally
+        {
+            button.IsEnabled = true;
+            UpdateServiceTestButtonState();
+        }
+    }
+
+    private static void SetSectionValidationResult(
+        TextBlock textBlock,
+        string sectionName,
+        ValidationRecord? record,
+        string? overrideText = null)
+    {
+        textBlock.Text = overrideText ?? $"Latest section test result for {sectionName}: {record!.Status} - {record.Message}";
+        textBlock.Foreground = record?.Status switch
+        {
+            ValidationStatus.Passed => Brushes.DarkGreen,
+            ValidationStatus.PassedWithWarning => Brushes.DarkGoldenrod,
+            ValidationStatus.Skipped => Brushes.DimGray,
+            ValidationStatus.FailedBlocking => Brushes.DarkRed,
+            _ => Brushes.DimGray,
+        };
+    }
+
+    private void UpdateServiceTestButtonState()
+    {
+        if (AlpacaLiveEnabledCheckBox is null || AlpacaLiveTestButton is null || AlpacaLiveTestResultTextBlock is null)
+        {
+            return;
+        }
+
+        var liveEnabled = AlpacaLiveEnabledCheckBox.IsChecked == true;
+        AlpacaLiveTestButton.IsEnabled = liveEnabled;
+        if (!liveEnabled)
+        {
+            SetSectionValidationResult(
+                AlpacaLiveTestResultTextBlock,
+                "Optional Alpaca Live",
+                null,
+                "Latest section test result for Optional Alpaca Live: Skipped - Enable optional live credentials to test this section.");
+        }
+    }
+
+    private void AnyWizardTextChanged(object sender, TextChangedEventArgs e)
+    {
+        HandleWizardInputChanged(e.OriginalSource as DependencyObject);
+    }
+
+    private void AnyWizardSelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        HandleWizardInputChanged(e.OriginalSource as DependencyObject);
+    }
+
+    private void AnyWizardToggleChanged(object sender, RoutedEventArgs e)
+    {
+        HandleWizardInputChanged(e.OriginalSource as DependencyObject);
+    }
+
+    private void HandleWizardInputChanged(DependencyObject? source)
+    {
+        if (!_uiInitialized || _isLoadingState)
+        {
+            return;
+        }
+
+        if (source is null ||
+            IsWithinElement(source, LogTextBox) ||
+            IsWithinElement(source, ApprovalSummaryTextBox) ||
+            IsWithinElement(source, ApprovalHistoryTextBox) ||
+            IsWithinElement(source, WizardTabs))
+        {
+            return;
+        }
+
+        MarkValidationStateDirty();
     }
 
     private void SyncAiProviderSelectionFromRows()
@@ -1094,4 +1364,132 @@ public partial class MainWindow : Window
         LogTextBox.Text = builder.ToString();
         LogTextBox.ScrollToEnd();
     }
+
+    private static bool IsWithinElement(DependencyObject source, DependencyObject? ancestor)
+    {
+        if (ancestor is null)
+        {
+            return false;
+        }
+
+        var current = source;
+        while (current is not null)
+        {
+            if (ReferenceEquals(current, ancestor))
+            {
+                return true;
+            }
+
+            current = VisualTreeHelper.GetParent(current);
+        }
+
+        return false;
+    }
+
+    private void MarkValidationStateDirty(bool logChange = true)
+    {
+        _hasPassingFullValidation = false;
+        _summaryApproved = false;
+        UpdateApprovalAndExportUi();
+        if (logChange)
+        {
+            VerboseLogger.Info("Wizard inputs changed. Validation and approval state reset to pending.");
+        }
+    }
+
+    private void UpdateApprovalAndExportUi()
+    {
+        if (ApprovalTab is null || ApproveSummaryButton is null || ExportButton is null)
+        {
+            return;
+        }
+
+        ApprovalTab.IsEnabled = _hasPassingFullValidation;
+        ApproveSummaryButton.IsEnabled = _hasPassingFullValidation;
+        ExportButton.IsEnabled = _hasPassingFullValidation && _summaryApproved;
+        UpdateNavigationButtons();
+    }
+
+    private void UpdateNavigationButtons()
+    {
+        if (BackButton is null || NextButton is null || WizardTabs is null)
+        {
+            return;
+        }
+
+        BackButton.IsEnabled = WizardTabs.SelectedIndex > 0;
+        NextButton.IsEnabled = WizardTabs.SelectedIndex < WizardTabs.Items.Count - 1
+            && (WizardTabs.SelectedIndex != GetReviewTabIndex() || _hasPassingFullValidation);
+    }
+
+    private void RefreshApprovalSummary()
+    {
+        if (ApprovalSummaryTextBox is null)
+        {
+            return;
+        }
+
+        PopulateStateFromControls();
+        ApprovalSummaryTextBox.Text = RenderingService.RenderApprovalSummary(_state);
+    }
+
+    private void UpdateApprovalHistoryDisplay()
+    {
+        if (ApprovalHistoryTextBox is null)
+        {
+            return;
+        }
+
+        ApprovalHistoryTextBox.Text = ApprovalHistoryStorage.LoadHistoryDisplayText();
+    }
+
+    private string? PromptForApprovalConfirmation()
+    {
+        var dialog = new Window
+        {
+            Title = "Confirm Summary Approval",
+            Width = 420,
+            Height = 190,
+            WindowStartupLocation = WindowStartupLocation.CenterOwner,
+            ResizeMode = ResizeMode.NoResize,
+            Owner = this,
+        };
+
+        var root = new Grid { Margin = new Thickness(16) };
+        root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+
+        var prompt = new TextBlock
+        {
+            Text = "Type APPROVE exactly to document approval for this redacted configuration summary.",
+            TextWrapping = TextWrapping.Wrap,
+        };
+        Grid.SetRow(prompt, 0);
+        root.Children.Add(prompt);
+
+        var input = new TextBox { Margin = new Thickness(0, 12, 0, 12) };
+        Grid.SetRow(input, 1);
+        root.Children.Add(input);
+
+        var buttons = new StackPanel
+        {
+            Orientation = Orientation.Horizontal,
+            HorizontalAlignment = HorizontalAlignment.Right,
+        };
+        var okButton = new Button { Content = "OK", Width = 90, Margin = new Thickness(0, 0, 10, 0), IsDefault = true };
+        var cancelButton = new Button { Content = "Cancel", Width = 90, IsCancel = true };
+        okButton.Click += (_, _) => dialog.DialogResult = true;
+        cancelButton.Click += (_, _) => dialog.DialogResult = false;
+        buttons.Children.Add(okButton);
+        buttons.Children.Add(cancelButton);
+        Grid.SetRow(buttons, 2);
+        root.Children.Add(buttons);
+
+        dialog.Content = root;
+        var result = dialog.ShowDialog();
+        return result == true ? input.Text.Trim() : null;
+    }
+
+    private int GetReviewTabIndex() => Math.Max(0, WizardTabs.Items.Count - 2);
 }

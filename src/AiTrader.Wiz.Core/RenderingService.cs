@@ -207,6 +207,114 @@ public static class RenderingService
         return sb.ToString();
     }
 
+    public static string RenderApprovalSummary(WizardState state)
+    {
+        var sb = new StringBuilder();
+        sb.AppendLine("AlTrader Configuration Summary");
+        sb.AppendLine("==============================");
+        sb.AppendLine();
+        sb.AppendLine($"Client Name: {state.ClientIdentity.ClientName}");
+        sb.AppendLine($"Main Contact Name: {state.ClientIdentity.MainContactName}");
+        sb.AppendLine($"Main Contact Email: {state.ClientIdentity.MainContactEmail}");
+        sb.AppendLine($"Deployment Name: {state.ClientIdentity.DeploymentName}");
+        sb.AppendLine();
+        sb.AppendLine("Computers");
+        sb.AppendLine("---------");
+        foreach (var computer in state.Computers)
+        {
+            sb.AppendLine($"- {computer.Label} ({computer.OperatingSystem})");
+            sb.AppendLine($"  Docker Enabled: {ToYesNo(computer.DockerAvailable)}");
+            sb.AppendLine($"  WSL Backend Host: {ToYesNo(computer.UsesWslBackend)}");
+            sb.AppendLine($"  Access Mode: {computer.AccessMode}");
+            sb.AppendLine($"  Host Name or IP Address: {DisplayOrPlaceholder(computer.AccessHostOrIp)}");
+            sb.AppendLine($"  SSH Username: {DisplayOrPlaceholder(computer.AccessUsername)}");
+            sb.AppendLine($"  SSH Port: {computer.AccessPort}");
+        }
+
+        sb.AppendLine();
+        sb.AppendLine("Runtime Targets");
+        sb.AppendLine("---------------");
+        foreach (var target in state.Targets)
+        {
+            sb.AppendLine($"- {target.DisplayName}: {string.Join(", ", target.Roles)}");
+            sb.AppendLine($"  Primary Desktop: {ToYesNo(target.IsPrimaryDesktop)}");
+            sb.AppendLine($"  Authoritative Backend: {ToYesNo(target.IsAuthoritativeBackend)}");
+        }
+
+        sb.AppendLine();
+        sb.AppendLine("Connectivity");
+        sb.AppendLine("------------");
+        sb.AppendLine($"Tailnet Name: {DisplayOrPlaceholder(state.Connectivity.TailnetName)}");
+        sb.AppendLine($"Backend Target Host or IP: {DisplayOrPlaceholder(state.Connectivity.BackendTargetHostOrIp)}");
+        sb.AppendLine($"Desktop Target Host or IP: {DisplayOrPlaceholder(state.Connectivity.DesktopTargetHostOrIp)}");
+        sb.AppendLine($"SSH Username: {DisplayOrPlaceholder(state.Connectivity.SshUsername)}");
+        sb.AppendLine($"SSH Port: {state.Connectivity.SshPort}");
+        sb.AppendLine($"Requires Tailscale: {ToYesNo(state.Connectivity.RequiresTailscale)}");
+        sb.AppendLine($"Bootstrap Complete: {ToYesNo(state.Connectivity.BootstrapComplete)}");
+
+        sb.AppendLine();
+        sb.AppendLine("Backend Runtime Paths");
+        sb.AppendLine("---------------------");
+        sb.AppendLine($"Hermes Home: {DisplayOrPlaceholder(state.Backend.HermesHome)}");
+        sb.AppendLine($"Repository Path: {DisplayOrPlaceholder(state.Backend.RepoPath)}");
+        sb.AppendLine($"Hermes Data Path: {DisplayOrPlaceholder(state.Backend.DataPath)}");
+        sb.AppendLine($"AlTrader Data Path: {DisplayOrPlaceholder(state.Backend.AlTraderDataPath)}");
+        sb.AppendLine($"Models Path: {DisplayOrPlaceholder(state.Backend.ModelsPath)}");
+        sb.AppendLine($"Logs Path: {DisplayOrPlaceholder(state.Backend.LogsPath)}");
+        sb.AppendLine($"Backup Directory: {DisplayOrPlaceholder(state.Backend.BackupsPath)}");
+        sb.AppendLine($"Time Zone: {DisplayOrPlaceholder(state.Backend.Timezone)}");
+
+        sb.AppendLine();
+        sb.AppendLine("Services");
+        sb.AppendLine("--------");
+        sb.AppendLine($"Hermes AI Provider: {HermesProviderCatalog.Find(state.HermesAiProvider.ProviderKey).DisplayName}");
+        sb.AppendLine($"Provider Base URL: {DisplayOrPlaceholder(state.HermesAiProvider.BaseUrl)}");
+        sb.AppendLine($"Provider Model Name: {DisplayOrPlaceholder(state.HermesAiProvider.ModelName)}");
+        sb.AppendLine($"Provider API Key: {RedactSecret(state.HermesAiProvider.ApiKey)}");
+        sb.AppendLine($"Alpaca Paper Account Name: {DisplayOrPlaceholder(state.AlpacaPaper.AccountName)}");
+        sb.AppendLine($"Alpaca Paper Base URL: {DisplayOrPlaceholder(state.AlpacaPaper.BaseUrl)}");
+        sb.AppendLine($"Alpaca Paper API Key: {RedactSecret(state.AlpacaPaper.ApiKey)}");
+        sb.AppendLine($"Alpaca Paper Secret Key: {RedactSecret(state.AlpacaPaper.SecretKey)}");
+        sb.AppendLine($"Telegram Bot Token: {RedactSecret(state.Telegram.BotToken)}");
+        sb.AppendLine($"Telegram Chat ID: {DisplayOrPlaceholder(state.Telegram.ChatId)}");
+        sb.AppendLine($"AgentMail API Key: {RedactSecret(state.AgentMail.ApiKey)}");
+        sb.AppendLine($"AgentMail Sender Address or Inbox ID: {DisplayOrPlaceholder(state.AgentMail.FromId)}");
+        sb.AppendLine($"AgentMail Recipient Email: {DisplayOrPlaceholder(state.AgentMail.RecipientEmail)}");
+        sb.AppendLine($"Optional Alpaca Live Enabled: {ToYesNo(state.AlpacaLive.Enabled)}");
+        sb.AppendLine($"Optional Alpaca Live Base URL: {DisplayOrPlaceholder(state.AlpacaLive.BaseUrl)}");
+        sb.AppendLine($"Optional Alpaca Live API Key: {RedactSecret(state.AlpacaLive.ApiKey)}");
+        sb.AppendLine($"Optional Alpaca Live Secret Key: {RedactSecret(state.AlpacaLive.SecretKey)}");
+
+        sb.AppendLine();
+        sb.AppendLine("Cash Allocation");
+        sb.AppendLine("---------------");
+        sb.AppendLine($"Starting Cash Amount ($): {state.CashAllocation.StartOfDayCashBasis:0.##}");
+        sb.AppendLine($"Protected Reserve: {FormatAllocationInput(state.CashAllocation.ProtectedReserve)}");
+        sb.AppendLine($"Per-Ticker Allocation: {FormatAllocationInput(state.CashAllocation.PerTickerAllocation)}");
+        sb.AppendLine($"Maximum Ranked Candidates: {state.CashAllocation.MaxRankedCandidatesPerCycle}");
+
+        sb.AppendLine();
+        sb.AppendLine("Validation Summary");
+        sb.AppendLine("------------------");
+        if (state.ValidationResults.Count == 0)
+        {
+            sb.AppendLine("- No validation results have been recorded yet.");
+        }
+        else
+        {
+            foreach (var record in state.ValidationResults)
+            {
+                sb.AppendLine($"- {record.Key}: {record.Status} - {record.Message}");
+            }
+        }
+
+        sb.AppendLine();
+        sb.AppendLine("Approval Note");
+        sb.AppendLine("-------------");
+        sb.AppendLine("Secrets are shown in redacted form on this summary. Export remains disabled until this summary is approved.");
+        return sb.ToString();
+    }
+
     public static string RenderInstruction(WizardState state)
     {
         var backendTarget = state.Targets.SingleOrDefault(t => t.IsAuthoritativeBackend);
@@ -436,6 +544,14 @@ public static class RenderingService
     {
         sb.AppendLine($"- `{key}`: {(string.IsNullOrWhiteSpace(value) ? "missing" : "provided")}");
     }
+
+    private static string RedactSecret(string value) =>
+        string.IsNullOrWhiteSpace(value) ? "[not provided]" : "[redacted]";
+
+    private static string DisplayOrPlaceholder(string value) =>
+        string.IsNullOrWhiteSpace(value) ? "[not provided]" : value;
+
+    private static string ToYesNo(bool value) => value ? "Yes" : "No";
 
     private static string FormatAllocationInput(AllocationInput input)
     {

@@ -153,6 +153,44 @@ public sealed class ValidationServiceTests
         Assert.Equal(ValidationStatus.Passed, result.Status);
     }
 
+    [Fact]
+    public void ValidateInputConventions_Warns_ForQuestionableStructuredFields()
+    {
+        var service = new ValidationService(new HttpClient(new FakeHandler(_ => new HttpResponseMessage(HttpStatusCode.OK))));
+        var state = BuildValidDeploymentState();
+        state.ClientIdentity.MainContactEmail = "not-an-email";
+        state.AgentMail.RecipientEmail = "also bad";
+        state.HermesAiProvider.BaseUrl = "not a url";
+        state.Telegram.ChatId = "chat-room";
+        state.Connectivity.BackendTargetHostOrIp = "bad host name";
+
+        var result = service.ValidateInputConventions(state);
+
+        Assert.Equal(ValidationStatus.PassedWithWarning, result.Status);
+        Assert.Contains("Main contact email", result.Message, StringComparison.Ordinal);
+        Assert.Contains("valid HTTP or HTTPS URL", result.Message, StringComparison.Ordinal);
+        Assert.Contains("Telegram Chat ID", result.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void ValidateInputConventions_Passes_ForReasonableStructuredFields()
+    {
+        var service = new ValidationService(new HttpClient(new FakeHandler(_ => new HttpResponseMessage(HttpStatusCode.OK))));
+        var state = BuildValidDeploymentState();
+        state.ClientIdentity.MainContactEmail = "ops@example.com";
+        state.AgentMail.FromId = "altrader@agentmail.to";
+        state.AgentMail.RecipientEmail = "reports@example.com";
+        state.HermesAiProvider.BaseUrl = "https://api.openai.com/v1";
+        state.AlpacaPaper.BaseUrl = "https://paper-api.alpaca.markets";
+        state.Telegram.ChatId = "7347932991";
+        state.Connectivity.BackendTargetHostOrIp = "backend.local";
+        state.Connectivity.DesktopTargetHostOrIp = "desktop.local";
+
+        var result = service.ValidateInputConventions(state);
+
+        Assert.Equal(ValidationStatus.Passed, result.Status);
+    }
+
     private static WizardState BuildValidDeploymentState()
     {
         var state = new WizardState

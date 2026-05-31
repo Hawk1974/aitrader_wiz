@@ -30,7 +30,7 @@
             <MenuItem Header="About" Click="AboutMenuItem_OnClick" ToolTip="Open the About dialog for this wizard"/>
         </Menu>
 
-        <TabControl x:Name="WizardTabs" Grid.Row="1">
+        <TabControl x:Name="WizardTabs" Grid.Row="1" SelectionChanged="WizardTabs_OnSelectionChanged">
             <TabItem Header="0. Start Here" ToolTip="Read the purpose, workflow, and handoff guidance before entering client data.">
                 <ScrollViewer VerticalScrollBarVisibility="Auto">
                     <StackPanel Margin="16">
@@ -84,7 +84,8 @@
                                 <TextBlock Margin="0,6,0,0" TextWrapping="Wrap" Text="Tab 4. Connectivity + Backend: the connectivity values, backend filesystem paths, and per-computer service placement details."/>
                                 <TextBlock Margin="0,6,0,0" TextWrapping="Wrap" Text="Tab 5. Services: the provider and service-specific values the setup AI will use when configuring Hermes and AlTrader."/>
                                 <TextBlock Margin="0,6,0,0" TextWrapping="Wrap" Text="Tab 6. Cash Allocation: the policy values AlTrader will use for protected reserve, per-ticker allocation, and ranked candidate limits."/>
-                                <TextBlock Margin="0,6,0,0" TextWrapping="Wrap" Text="Tab 7. Review + Export: draft handling, validation, export, and the visible session log."/>
+                                <TextBlock Margin="0,6,0,0" TextWrapping="Wrap" Text="Tab 7. Review + Validate: draft handling, validation, and the visible session log."/>
+                                <TextBlock Margin="0,6,0,0" TextWrapping="Wrap" Text="Tab 8. Approval + Export: redacted final review, explicit approval, local approval history, and the final stand-up package export."/>
                             </StackPanel>
                         </GroupBox>
 
@@ -160,14 +161,14 @@
                                     <ColumnDefinition Width="240"/>
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
-                                <TextBlock Grid.Row="0" Grid.Column="0" Margin="0,0,8,8" VerticalAlignment="Center" Text="Client Name" ToolTip="This label identifies the adjacent field where you enter the client or organization name for the deployment."/>
-                                <TextBox x:Name="ClientNameTextBox" Grid.Row="0" Grid.Column="1" Margin="0,0,0,8" ToolTip="Enter the client or organization name"/>
-                                <TextBlock Grid.Row="1" Grid.Column="0" Margin="0,0,8,8" VerticalAlignment="Center" Text="Main Contact Name" ToolTip="This label identifies the adjacent field where you enter the primary human contact for this deployment."/>
-                                <TextBox x:Name="MainContactNameTextBox" Grid.Row="1" Grid.Column="1" Margin="0,0,0,8" ToolTip="Enter the primary human contact for this deployment"/>
-                                <TextBlock Grid.Row="2" Grid.Column="0" Margin="0,0,8,8" VerticalAlignment="Center" Text="Main Contact Email" ToolTip="This label identifies the adjacent field where you enter the main contact email used in the exported files."/>
-                                <TextBox x:Name="MainContactEmailTextBox" Grid.Row="2" Grid.Column="1" Margin="0,0,0,8" ToolTip="Enter the primary contact email used in the exported handoff files"/>
-                                <TextBlock Grid.Row="3" Grid.Column="0" Margin="0,0,8,0" VerticalAlignment="Center" Text="Deployment Name" ToolTip="This label identifies the adjacent field where you enter the friendly name of this AlTrader deployment."/>
-                                <TextBox x:Name="DeploymentNameTextBox" Grid.Row="3" Grid.Column="1" ToolTip="Enter the deployment name for this AlTrader instance"/>
+                                <TextBlock Grid.Row="0" Grid.Column="0" Margin="0,0,8,8" VerticalAlignment="Center" Text="Client Name" ToolTip="This field accepts free-form descriptive text for the client or organization name. It is not a system identifier."/>
+                                <TextBox x:Name="ClientNameTextBox" Grid.Row="0" Grid.Column="1" Margin="0,0,0,8" ToolTip="Enter free-form descriptive text for the client or organization name"/>
+                                <TextBlock Grid.Row="1" Grid.Column="0" Margin="0,0,8,8" VerticalAlignment="Center" Text="Main Contact Name" ToolTip="This field accepts free-form human name text for the primary deployment contact. It is not a machine or service identifier."/>
+                                <TextBox x:Name="MainContactNameTextBox" Grid.Row="1" Grid.Column="1" Margin="0,0,0,8" ToolTip="Enter free-form human name text for the primary contact"/>
+                                <TextBlock Grid.Row="2" Grid.Column="0" Margin="0,0,8,8" VerticalAlignment="Center" Text="Main Contact Email" ToolTip="This field is structured contact data and should look like a usable email address because later delivery and notification workflows may rely on it."/>
+                                <TextBox x:Name="MainContactEmailTextBox" Grid.Row="2" Grid.Column="1" Margin="0,0,0,8" ToolTip="Enter a contact email address. The wizard will warn if the value does not look like a standard email format."/>
+                                <TextBlock Grid.Row="3" Grid.Column="0" Margin="0,0,8,0" VerticalAlignment="Center" Text="Deployment Name" ToolTip="This field accepts free-form descriptive text for the friendly deployment name shown in the exported files."/>
+                                <TextBox x:Name="DeploymentNameTextBox" Grid.Row="3" Grid.Column="1" ToolTip="Enter free-form descriptive text for the friendly deployment name"/>
                             </Grid>
                         </GroupBox>
                     </StackPanel>
@@ -201,24 +202,24 @@
                                     <ColumnDefinition Width="240"/>
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
-                                <TextBlock Grid.Row="0" Grid.Column="0" Margin="0,0,8,8" VerticalAlignment="Center" Text="Computer Name" ToolTip="This label identifies the adjacent field where you enter the recognizable computer name used to identify this machine in the deployment, such as a host name or role-based machine name."/>
-                                <TextBox x:Name="Computer1LabelTextBox" Grid.Row="0" Grid.Column="1" Margin="0,0,0,8" ToolTip="Enter the recognizable computer name for computer 1, such as its host name or deployment role name"/>
+                                <TextBlock Grid.Row="0" Grid.Column="0" Margin="0,0,8,8" VerticalAlignment="Center" Text="Computer Name" ToolTip="This field is structured system-identification text. Enter a recognizable machine name, host name, or role-based computer name that helps the setup AI identify the correct system."/>
+                                <TextBox x:Name="Computer1LabelTextBox" Grid.Row="0" Grid.Column="1" Margin="0,0,0,8" ToolTip="Enter structured system-identification text for computer 1, such as a machine host name or role-based computer name"/>
                                 <TextBlock Grid.Row="1" Grid.Column="0" Margin="0,0,8,8" VerticalAlignment="Center" Text="Operating System" ToolTip="This label identifies the adjacent dropdown where you choose the operating system running on this computer."/>
                                 <ComboBox x:Name="Computer1OsComboBox" Grid.Row="1" Grid.Column="1" Margin="0,0,0,8" SelectionChanged="ComputerOsComboBox_OnSelectionChanged" ToolTip="Select the operating system for computer 1"/>
                                 <CheckBox x:Name="Computer1WslCheckBox" Grid.Row="2" Grid.Column="1" Content="This Windows machine will also host a WSL backend target" Checked="WslCheckBox_OnChanged" Unchecked="WslCheckBox_OnChanged" ToolTip="Enable this when a Windows machine also hosts the Hermes backend inside WSL"/>
                                 <CheckBox x:Name="Computer1DockerCheckBox" Grid.Row="3" Grid.Column="1" Margin="0,0,0,8" Content="This computer uses Docker for one or more AlTrader services" ToolTip="Enable this when one or more AlTrader-related services on computer 1 are intended to run in Docker containers."/>
                                 <TextBlock Grid.Row="4" Grid.Column="0" Margin="0,0,8,8" VerticalAlignment="Center" Text="Access Mode" ToolTip="This label identifies the adjacent dropdown where you choose how the setup AI should reach this computer."/>
                                 <ComboBox x:Name="Computer1AccessModeComboBox" Grid.Row="4" Grid.Column="1" Margin="0,0,0,8" DisplayMemberPath="DisplayName" SelectedValuePath="Value" SelectionChanged="AccessModeComboBox_OnSelectionChanged" ToolTip="Select whether the setup AI should use local access, Tailscale, SSH, or no access for computer 1."/>
-                                <TextBlock x:Name="Computer1AccessHostLabel" Grid.Row="5" Grid.Column="0" Margin="0,0,8,8" VerticalAlignment="Center" Text="Host Name or IP Address" ToolTip="This label identifies the adjacent field where you enter the network address the setup AI should use to reach computer 1 over Tailscale or SSH."/>
-                                <TextBox x:Name="Computer1AccessHostTextBox" Grid.Row="5" Grid.Column="1" Margin="0,0,0,8" ToolTip="Enter the host name or IP address the setup AI should use to reach computer 1"/>
+                                <TextBlock x:Name="Computer1AccessHostLabel" Grid.Row="5" Grid.Column="0" Margin="0,0,8,8" VerticalAlignment="Center" Text="Host Name or IP Address" ToolTip="This field is structured network data. Enter the actual host name or IP address the setup AI should use to reach computer 1."/>
+                                <TextBox x:Name="Computer1AccessHostTextBox" Grid.Row="5" Grid.Column="1" Margin="0,0,0,8" ToolTip="Enter a structured host name or IP address for computer 1. The wizard will warn if the value looks questionable."/>
                                 <StackPanel x:Name="Computer1SshDetailsPanel" Grid.Row="6" Grid.Column="1" Orientation="Horizontal">
                                     <StackPanel Width="220">
-                                        <TextBlock Margin="0,0,0,4" Text="SSH Username" ToolTip="This label identifies the adjacent field where you enter the SSH username for computer 1."/>
-                                        <TextBox x:Name="Computer1AccessUsernameTextBox" Margin="0,0,12,0" ToolTip="Enter the SSH username the setup AI should use for computer 1."/>
+                                        <TextBlock Margin="0,0,0,4" Text="SSH Username" ToolTip="This field is structured system-login data. Enter the SSH username the setup AI should use for computer 1."/>
+                                        <TextBox x:Name="Computer1AccessUsernameTextBox" Margin="0,0,12,0" ToolTip="Enter structured system-login text for the SSH username on computer 1."/>
                                     </StackPanel>
                                     <StackPanel Width="120">
-                                        <TextBlock Margin="0,0,0,4" Text="SSH Port" ToolTip="This label identifies the adjacent field where you enter the SSH port for computer 1."/>
-                                        <TextBox x:Name="Computer1AccessPortTextBox" ToolTip="Enter the SSH port the setup AI should use for computer 1."/>
+                                        <TextBlock Margin="0,0,0,4" Text="SSH Port" ToolTip="This field is structured numeric network data. Enter the SSH port number the setup AI should use for computer 1."/>
+                                        <TextBox x:Name="Computer1AccessPortTextBox" ToolTip="Enter the numeric SSH port for computer 1."/>
                                     </StackPanel>
                                 </StackPanel>
                             </Grid>
@@ -239,24 +240,24 @@
                                     <ColumnDefinition Width="240"/>
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
-                                <TextBlock Grid.Row="0" Grid.Column="0" Margin="0,0,8,8" VerticalAlignment="Center" Text="Computer Name" ToolTip="This label identifies the adjacent field where you enter the recognizable computer name used to identify this machine in the deployment, such as a host name or role-based machine name."/>
-                                <TextBox x:Name="Computer2LabelTextBox" Grid.Row="0" Grid.Column="1" Margin="0,0,0,8" ToolTip="Enter the recognizable computer name for computer 2, such as its host name or deployment role name"/>
+                                <TextBlock Grid.Row="0" Grid.Column="0" Margin="0,0,8,8" VerticalAlignment="Center" Text="Computer Name" ToolTip="This field is structured system-identification text. Enter a recognizable machine name, host name, or role-based computer name that helps the setup AI identify the correct system."/>
+                                <TextBox x:Name="Computer2LabelTextBox" Grid.Row="0" Grid.Column="1" Margin="0,0,0,8" ToolTip="Enter structured system-identification text for computer 2, such as a machine host name or role-based computer name"/>
                                 <TextBlock Grid.Row="1" Grid.Column="0" Margin="0,0,8,8" VerticalAlignment="Center" Text="Operating System" ToolTip="This label identifies the adjacent dropdown where you choose the operating system running on this computer."/>
                                 <ComboBox x:Name="Computer2OsComboBox" Grid.Row="1" Grid.Column="1" Margin="0,0,0,8" SelectionChanged="ComputerOsComboBox_OnSelectionChanged" ToolTip="Select the operating system for computer 2"/>
                                 <CheckBox x:Name="Computer2WslCheckBox" Grid.Row="2" Grid.Column="1" Content="This Windows machine will also host a WSL backend target" Checked="WslCheckBox_OnChanged" Unchecked="WslCheckBox_OnChanged" ToolTip="Enable this when a Windows machine also hosts the Hermes backend inside WSL"/>
                                 <CheckBox x:Name="Computer2DockerCheckBox" Grid.Row="3" Grid.Column="1" Margin="0,0,0,8" Content="This computer uses Docker for one or more AlTrader services" ToolTip="Enable this when one or more AlTrader-related services on computer 2 are intended to run in Docker containers."/>
                                 <TextBlock Grid.Row="4" Grid.Column="0" Margin="0,0,8,8" VerticalAlignment="Center" Text="Access Mode" ToolTip="This label identifies the adjacent dropdown where you choose how the setup AI should reach this computer."/>
                                 <ComboBox x:Name="Computer2AccessModeComboBox" Grid.Row="4" Grid.Column="1" Margin="0,0,0,8" DisplayMemberPath="DisplayName" SelectedValuePath="Value" SelectionChanged="AccessModeComboBox_OnSelectionChanged" ToolTip="Select whether the setup AI should use local access, Tailscale, SSH, or no access for computer 2."/>
-                                <TextBlock x:Name="Computer2AccessHostLabel" Grid.Row="5" Grid.Column="0" Margin="0,0,8,8" VerticalAlignment="Center" Text="Host Name or IP Address" ToolTip="This label identifies the adjacent field where you enter the network address the setup AI should use to reach computer 2 over Tailscale or SSH."/>
-                                <TextBox x:Name="Computer2AccessHostTextBox" Grid.Row="5" Grid.Column="1" Margin="0,0,0,8" ToolTip="Enter the host name or IP address the setup AI should use to reach computer 2"/>
+                                <TextBlock x:Name="Computer2AccessHostLabel" Grid.Row="5" Grid.Column="0" Margin="0,0,8,8" VerticalAlignment="Center" Text="Host Name or IP Address" ToolTip="This field is structured network data. Enter the actual host name or IP address the setup AI should use to reach computer 2."/>
+                                <TextBox x:Name="Computer2AccessHostTextBox" Grid.Row="5" Grid.Column="1" Margin="0,0,0,8" ToolTip="Enter a structured host name or IP address for computer 2. The wizard will warn if the value looks questionable."/>
                                 <StackPanel x:Name="Computer2SshDetailsPanel" Grid.Row="6" Grid.Column="1" Orientation="Horizontal">
                                     <StackPanel Width="220">
-                                        <TextBlock Margin="0,0,0,4" Text="SSH Username" ToolTip="This label identifies the adjacent field where you enter the SSH username for computer 2."/>
-                                        <TextBox x:Name="Computer2AccessUsernameTextBox" Margin="0,0,12,0" ToolTip="Enter the SSH username the setup AI should use for computer 2."/>
+                                        <TextBlock Margin="0,0,0,4" Text="SSH Username" ToolTip="This field is structured system-login data. Enter the SSH username the setup AI should use for computer 2."/>
+                                        <TextBox x:Name="Computer2AccessUsernameTextBox" Margin="0,0,12,0" ToolTip="Enter structured system-login text for the SSH username on computer 2."/>
                                     </StackPanel>
                                     <StackPanel Width="120">
-                                        <TextBlock Margin="0,0,0,4" Text="SSH Port" ToolTip="This label identifies the adjacent field where you enter the SSH port for computer 2."/>
-                                        <TextBox x:Name="Computer2AccessPortTextBox" ToolTip="Enter the SSH port the setup AI should use for computer 2."/>
+                                        <TextBlock Margin="0,0,0,4" Text="SSH Port" ToolTip="This field is structured numeric network data. Enter the SSH port number the setup AI should use for computer 2."/>
+                                        <TextBox x:Name="Computer2AccessPortTextBox" ToolTip="Enter the numeric SSH port for computer 2."/>
                                     </StackPanel>
                                 </StackPanel>
                             </Grid>
@@ -322,16 +323,16 @@
                                     <ColumnDefinition Width="240"/>
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
-                                <TextBlock Grid.Row="0" Grid.Column="0" Margin="0,0,8,8" VerticalAlignment="Center" Text="Tailnet Name" ToolTip="This label identifies the adjacent field where you enter the Tailscale tailnet name when multi-machine connectivity uses Tailscale."/>
-                                <TextBox x:Name="TailnetNameTextBox" Grid.Row="0" Grid.Column="1" Margin="0,0,0,8" ToolTip="Enter the Tailscale tailnet name if the deployment spans more than one machine"/>
-                                <TextBlock Grid.Row="1" Grid.Column="0" Margin="0,0,8,8" VerticalAlignment="Center" Text="Backend Host or IP" ToolTip="This label identifies the adjacent field where you enter the hostname or IP address used to reach the authoritative backend."/>
-                                <TextBox x:Name="BackendHostTextBox" Grid.Row="1" Grid.Column="1" Margin="0,0,0,8" ToolTip="Enter the hostname or IP address used to reach the authoritative backend"/>
-                                <TextBlock Grid.Row="2" Grid.Column="0" Margin="0,0,8,8" VerticalAlignment="Center" Text="Desktop Host or IP" ToolTip="This label identifies the adjacent field where you enter the hostname or IP address used to reach the Hermes Desktop machine."/>
-                                <TextBox x:Name="DesktopHostTextBox" Grid.Row="2" Grid.Column="1" Margin="0,0,0,8" ToolTip="Enter the hostname or IP address used to reach the Hermes Desktop machine"/>
-                                <TextBlock Grid.Row="3" Grid.Column="0" Margin="0,0,8,8" VerticalAlignment="Center" Text="SSH Username" ToolTip="This label identifies the adjacent field where you enter the SSH user name for backend access when remote setup is required."/>
-                                <TextBox x:Name="SshUserTextBox" Grid.Row="3" Grid.Column="1" Margin="0,0,0,8" ToolTip="Enter the SSH username for the backend machine if remote access is required"/>
-                                <TextBlock Grid.Row="4" Grid.Column="0" Margin="0,0,8,8" VerticalAlignment="Center" Text="SSH Port" ToolTip="This label identifies the adjacent field where you enter the SSH port used to access the backend, usually 22."/>
-                                <TextBox x:Name="SshPortTextBox" Grid.Row="4" Grid.Column="1" Margin="0,0,0,8" ToolTip="Enter the SSH port used for backend access, usually 22"/>
+                                <TextBlock Grid.Row="0" Grid.Column="0" Margin="0,0,8,8" VerticalAlignment="Center" Text="Tailnet Name" ToolTip="This field is structured network-configuration text. Enter the actual Tailscale tailnet name if Tailscale is part of the deployment."/>
+                                <TextBox x:Name="TailnetNameTextBox" Grid.Row="0" Grid.Column="1" Margin="0,0,0,8" ToolTip="Enter structured network-configuration text for the Tailscale tailnet name when applicable"/>
+                                <TextBlock Grid.Row="1" Grid.Column="0" Margin="0,0,8,8" VerticalAlignment="Center" Text="Backend Host or IP" ToolTip="This field is structured network data. Enter the host name or IP address used to reach the authoritative backend."/>
+                                <TextBox x:Name="BackendHostTextBox" Grid.Row="1" Grid.Column="1" Margin="0,0,0,8" ToolTip="Enter a structured host name or IP address for the authoritative backend. The wizard will warn if the value looks questionable."/>
+                                <TextBlock Grid.Row="2" Grid.Column="0" Margin="0,0,8,8" VerticalAlignment="Center" Text="Desktop Host or IP" ToolTip="This field is structured network data. Enter the host name or IP address used to reach the Hermes Desktop machine."/>
+                                <TextBox x:Name="DesktopHostTextBox" Grid.Row="2" Grid.Column="1" Margin="0,0,0,8" ToolTip="Enter a structured host name or IP address for the Hermes Desktop machine. The wizard will warn if the value looks questionable."/>
+                                <TextBlock Grid.Row="3" Grid.Column="0" Margin="0,0,8,8" VerticalAlignment="Center" Text="SSH Username" ToolTip="This field is structured system-login data. Enter the SSH user name for backend access when remote setup is required."/>
+                                <TextBox x:Name="SshUserTextBox" Grid.Row="3" Grid.Column="1" Margin="0,0,0,8" ToolTip="Enter structured system-login text for the SSH username used for backend access"/>
+                                <TextBlock Grid.Row="4" Grid.Column="0" Margin="0,0,8,8" VerticalAlignment="Center" Text="SSH Port" ToolTip="This field is structured numeric network data. Enter the SSH port used to access the backend, usually 22."/>
+                                <TextBox x:Name="SshPortTextBox" Grid.Row="4" Grid.Column="1" Margin="0,0,0,8" ToolTip="Enter the numeric SSH port used for backend access, usually 22"/>
                                 <CheckBox x:Name="RequiresTailscaleCheckBox" Grid.Row="5" Grid.Column="1" Content="This deployment requires Tailscale between targets" ToolTip="Enable this when the backend and desktop depend on Tailscale for connectivity"/>
                                 <CheckBox x:Name="BootstrapCompleteCheckBox" Grid.Row="6" Grid.Column="1" Content="Bootstrap connectivity is already complete" ToolTip="Enable this after the required network connectivity has already been verified"/>
                             </Grid>
@@ -352,22 +353,22 @@
                                     <ColumnDefinition Width="240"/>
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
-                                <TextBlock Grid.Row="0" Grid.Column="0" Margin="0,0,8,8" VerticalAlignment="Center" Text="Hermes Home" ToolTip="This label identifies the adjacent field where you enter the Hermes home directory on the backend machine."/>
-                                <TextBox x:Name="HermesHomeTextBox" Grid.Row="0" Grid.Column="1" Margin="0,0,0,8" ToolTip="Enter the Hermes home directory on the authoritative backend"/>
-                                <TextBlock Grid.Row="1" Grid.Column="0" Margin="0,0,8,8" VerticalAlignment="Center" Text="Repository Path" ToolTip="This label identifies the adjacent field where you enter the filesystem path where the AlTrader repository will be placed on the backend."/>
-                                <TextBox x:Name="RepoPathTextBox" Grid.Row="1" Grid.Column="1" Margin="0,0,0,8" ToolTip="Enter the backend filesystem path where the AlTrader repository will live"/>
-                                <TextBlock Grid.Row="2" Grid.Column="0" Margin="0,0,8,8" VerticalAlignment="Center" Text="Hermes Data Path" ToolTip="This label identifies the adjacent field where you enter the base Hermes runtime data directory on the backend."/>
-                                <TextBox x:Name="DataPathTextBox" Grid.Row="2" Grid.Column="1" Margin="0,0,0,8" ToolTip="Enter the base Hermes runtime data directory on the backend"/>
-                                <TextBlock Grid.Row="3" Grid.Column="0" Margin="0,0,8,8" VerticalAlignment="Center" Text="AlTrader Data Path" ToolTip="This label identifies the adjacent field where you enter the AlTrader-specific runtime data directory on the backend."/>
-                                <TextBox x:Name="AlTraderDataPathTextBox" Grid.Row="3" Grid.Column="1" Margin="0,0,0,8" ToolTip="Enter the AlTrader-specific runtime data directory on the backend"/>
-                                <TextBlock Grid.Row="4" Grid.Column="0" Margin="0,0,8,8" VerticalAlignment="Center" Text="Models Path" ToolTip="This label identifies the adjacent field where you enter the backend models directory when the selected provider uses local models."/>
-                                <TextBox x:Name="ModelsPathTextBox" Grid.Row="4" Grid.Column="1" Margin="0,0,0,8" ToolTip="Enter the backend models directory if a local provider uses one"/>
-                                <TextBlock Grid.Row="5" Grid.Column="0" Margin="0,0,8,8" VerticalAlignment="Center" Text="Logs Path" ToolTip="This label identifies the adjacent field where you enter the backend directory for Hermes and AlTrader log files."/>
-                                <TextBox x:Name="LogsPathTextBox" Grid.Row="5" Grid.Column="1" Margin="0,0,0,8" ToolTip="Enter the backend logs directory for Hermes and AlTrader runtime logs"/>
-                                <TextBlock Grid.Row="6" Grid.Column="0" Margin="0,0,8,8" VerticalAlignment="Center" Text="Backup Directory" ToolTip="This label identifies the adjacent field where you enter the backend directory used for backups and archived runtime outputs."/>
-                                <TextBox x:Name="BackupsPathTextBox" Grid.Row="6" Grid.Column="1" Margin="0,0,0,8" ToolTip="Enter the backend backup directory used for exported or archived runtime data"/>
-                                <TextBlock Grid.Row="7" Grid.Column="0" Margin="0,0,8,0" VerticalAlignment="Center" Text="Time Zone" ToolTip="This label identifies the adjacent field where you enter the backend time zone used for scheduling and reporting."/>
-                                <TextBox x:Name="TimezoneTextBox" Grid.Row="7" Grid.Column="1" ToolTip="Enter the backend time zone, for example America/Los_Angeles"/>
+                                <TextBlock Grid.Row="0" Grid.Column="0" Margin="0,0,8,8" VerticalAlignment="Center" Text="Hermes Home" ToolTip="This field is structured filesystem data. Enter the backend directory path that should act as the Hermes home location."/>
+                                <TextBox x:Name="HermesHomeTextBox" Grid.Row="0" Grid.Column="1" Margin="0,0,0,8" ToolTip="Enter a structured filesystem path for the Hermes home directory on the authoritative backend"/>
+                                <TextBlock Grid.Row="1" Grid.Column="0" Margin="0,0,8,8" VerticalAlignment="Center" Text="Repository Path" ToolTip="This field is structured filesystem data. Enter the backend directory path where the AlTrader repository will be placed."/>
+                                <TextBox x:Name="RepoPathTextBox" Grid.Row="1" Grid.Column="1" Margin="0,0,0,8" ToolTip="Enter a structured filesystem path for the backend AlTrader repository location"/>
+                                <TextBlock Grid.Row="2" Grid.Column="0" Margin="0,0,8,8" VerticalAlignment="Center" Text="Hermes Data Path" ToolTip="This field is structured filesystem data. Enter the base Hermes runtime data directory path on the backend."/>
+                                <TextBox x:Name="DataPathTextBox" Grid.Row="2" Grid.Column="1" Margin="0,0,0,8" ToolTip="Enter a structured filesystem path for the base Hermes runtime data directory"/>
+                                <TextBlock Grid.Row="3" Grid.Column="0" Margin="0,0,8,8" VerticalAlignment="Center" Text="AlTrader Data Path" ToolTip="This field is structured filesystem data. Enter the AlTrader-specific runtime data directory path on the backend."/>
+                                <TextBox x:Name="AlTraderDataPathTextBox" Grid.Row="3" Grid.Column="1" Margin="0,0,0,8" ToolTip="Enter a structured filesystem path for the AlTrader-specific runtime data directory"/>
+                                <TextBlock Grid.Row="4" Grid.Column="0" Margin="0,0,8,8" VerticalAlignment="Center" Text="Models Path" ToolTip="This field is structured filesystem data. Enter the backend models directory path when the selected provider uses local models."/>
+                                <TextBox x:Name="ModelsPathTextBox" Grid.Row="4" Grid.Column="1" Margin="0,0,0,8" ToolTip="Enter a structured filesystem path for the backend models directory when applicable"/>
+                                <TextBlock Grid.Row="5" Grid.Column="0" Margin="0,0,8,8" VerticalAlignment="Center" Text="Logs Path" ToolTip="This field is structured filesystem data. Enter the backend directory path where Hermes and AlTrader should write logs."/>
+                                <TextBox x:Name="LogsPathTextBox" Grid.Row="5" Grid.Column="1" Margin="0,0,0,8" ToolTip="Enter a structured filesystem path for the backend logs directory"/>
+                                <TextBlock Grid.Row="6" Grid.Column="0" Margin="0,0,8,8" VerticalAlignment="Center" Text="Backup Directory" ToolTip="This field is structured filesystem data. Enter the backend directory path used for backups and archived runtime outputs."/>
+                                <TextBox x:Name="BackupsPathTextBox" Grid.Row="6" Grid.Column="1" Margin="0,0,0,8" ToolTip="Enter a structured filesystem path for the backend backup directory"/>
+                                <TextBlock Grid.Row="7" Grid.Column="0" Margin="0,0,8,0" VerticalAlignment="Center" Text="Time Zone" ToolTip="This field is structured scheduling data. Enter a standard time-zone identifier such as America/Los_Angeles."/>
+                                <TextBox x:Name="TimezoneTextBox" Grid.Row="7" Grid.Column="1" ToolTip="Enter a structured time-zone identifier, for example America/Los_Angeles"/>
                             </Grid>
                         </GroupBox>
                         <GroupBox Header="Per-Computer Service Placement" Margin="0,16,0,0" ToolTip="Explicitly assign each supported service to the correct computer and choose whether it is host-native or containerized there.">
@@ -427,6 +428,8 @@
                                     <RowDefinition Height="Auto"/>
                                     <RowDefinition Height="Auto"/>
                                     <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
                                 </Grid.RowDefinitions>
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="240"/>
@@ -434,12 +437,14 @@
                                 </Grid.ColumnDefinitions>
                                 <TextBlock Grid.Row="0" Grid.Column="0" Margin="0,0,8,8" VerticalAlignment="Center" Text="Provider" ToolTip="This label identifies the adjacent dropdown where you choose the backend AI provider and align the provider-specific fields."/>
                                 <ComboBox x:Name="AiProviderServicesComboBox" Grid.Row="0" Grid.Column="1" Margin="0,0,0,8" DisplayMemberPath="DisplayName" SelectionChanged="AiProviderServicesComboBox_OnSelectionChanged" ToolTip="Select the same backend AI provider chosen on the Targets tab"/>
-                                <TextBlock x:Name="AiProviderBaseUrlLabel" Grid.Row="1" Grid.Column="0" Margin="0,0,8,8" VerticalAlignment="Center" Text="Base URL" ToolTip="This label identifies the adjacent field where you enter the API base URL for the selected backend AI provider."/>
-                                <TextBox x:Name="AiProviderBaseUrlTextBox" Grid.Row="1" Grid.Column="1" Margin="0,0,0,8" ToolTip="Enter the API base URL for the selected backend AI provider"/>
+                                <TextBlock x:Name="AiProviderBaseUrlLabel" Grid.Row="1" Grid.Column="0" Margin="0,0,8,8" VerticalAlignment="Center" Text="Base URL" ToolTip="This field is structured service-endpoint data. Enter the full HTTP or HTTPS base URL for the selected backend AI provider."/>
+                                <TextBox x:Name="AiProviderBaseUrlTextBox" Grid.Row="1" Grid.Column="1" Margin="0,0,0,8" ToolTip="Enter the full HTTP or HTTPS base URL for the selected backend AI provider. The wizard will warn if the value does not look like a URL."/>
                                 <TextBlock x:Name="AiProviderModelLabel" Grid.Row="2" Grid.Column="0" Margin="0,0,8,8" VerticalAlignment="Center" Text="Model Name" ToolTip="This label identifies the adjacent field where you enter the model name or model id required by the selected provider."/>
                                 <TextBox x:Name="AiProviderModelTextBox" Grid.Row="2" Grid.Column="1" Margin="0,0,0,8" ToolTip="Enter the model name or model id for the selected backend AI provider"/>
                                 <TextBlock x:Name="AiProviderApiKeyLabel" Grid.Row="3" Grid.Column="0" Margin="0,0,8,0" VerticalAlignment="Center" Text="API Key" ToolTip="This label identifies the adjacent secret field where you enter the provider API key when the selected provider requires one."/>
                                 <local:SecretFieldControl x:Name="AiProviderApiKeyControl" Grid.Row="3" Grid.Column="1" ToolTip="Enter the API key for the selected backend AI provider when required"/>
+                                <Button x:Name="AiProviderTestButton" Grid.Row="4" Grid.Column="1" Width="140" Height="30" Margin="0,12,0,0" HorizontalAlignment="Left" Content="Test Connection" Click="AiProviderTestButton_OnClick" ToolTip="Validate only the Hermes AI provider connection details in this section."/>
+                                <TextBlock x:Name="AiProviderTestResultTextBlock" Grid.Row="5" Grid.Column="1" Margin="0,8,0,0" Foreground="DimGray" TextWrapping="Wrap" Text="Latest section test result will appear here for the Hermes AI provider only." ToolTip="This text shows the latest test result for the Hermes AI provider section only."/>
                             </Grid>
                         </GroupBox>
                         <TextBlock x:Name="AiProviderHelperTextBlock" Margin="0,10,0,0" TextWrapping="Wrap" Foreground="DimGray"/>
@@ -447,6 +452,8 @@
                         <GroupBox Header="Alpaca Paper" Margin="0,16,0,0" ToolTip="Enter the Alpaca paper trading account details used for paper-mode stand-up and validation">
                             <Grid Margin="12">
                                 <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
                                     <RowDefinition Height="Auto"/>
                                     <RowDefinition Height="Auto"/>
                                     <RowDefinition Height="Auto"/>
@@ -462,14 +469,18 @@
                                 <local:SecretFieldControl x:Name="AlpacaPaperApiKeyControl" Grid.Row="1" Grid.Column="1" Margin="0,0,0,8" ToolTip="Enter the Alpaca paper API key"/>
                                 <TextBlock Grid.Row="2" Grid.Column="0" Margin="0,0,8,8" VerticalAlignment="Center" Text="Secret Key" ToolTip="This label identifies the adjacent secret field where you enter the Alpaca paper secret key."/>
                                 <local:SecretFieldControl x:Name="AlpacaPaperSecretControl" Grid.Row="2" Grid.Column="1" Margin="0,0,0,8" ToolTip="Enter the Alpaca paper secret key"/>
-                                <TextBlock Grid.Row="3" Grid.Column="0" Margin="0,0,8,0" VerticalAlignment="Center" Text="Base URL" ToolTip="This label identifies the adjacent field where you enter the Alpaca paper API base URL."/>
-                                <TextBox x:Name="AlpacaPaperBaseUrlTextBox" Grid.Row="3" Grid.Column="1" ToolTip="Enter the Alpaca paper API base URL"/>
+                                <TextBlock Grid.Row="3" Grid.Column="0" Margin="0,0,8,0" VerticalAlignment="Center" Text="Base URL" ToolTip="This field is structured service-endpoint data. Enter the full HTTP or HTTPS base URL for the Alpaca paper API."/>
+                                <TextBox x:Name="AlpacaPaperBaseUrlTextBox" Grid.Row="3" Grid.Column="1" ToolTip="Enter the full HTTP or HTTPS base URL for the Alpaca paper API. The wizard will warn if the value does not look like a URL."/>
+                                <Button x:Name="AlpacaPaperTestButton" Grid.Row="4" Grid.Column="1" Width="140" Height="30" Margin="0,12,0,0" HorizontalAlignment="Left" Content="Test Connection" Click="AlpacaPaperTestButton_OnClick" ToolTip="Validate only the Alpaca paper connection details in this section."/>
+                                <TextBlock x:Name="AlpacaPaperTestResultTextBlock" Grid.Row="5" Grid.Column="1" Margin="0,8,0,0" Foreground="DimGray" TextWrapping="Wrap" Text="Latest section test result will appear here for Alpaca paper only." ToolTip="This text shows the latest test result for the Alpaca paper section only."/>
                             </Grid>
                         </GroupBox>
 
                         <GroupBox Header="Telegram" Margin="0,16,0,0" ToolTip="Enter the Telegram bot settings used for AlTrader notifications">
                             <Grid Margin="12">
                                 <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
                                     <RowDefinition Height="Auto"/>
                                     <RowDefinition Height="Auto"/>
                                 </Grid.RowDefinitions>
@@ -479,14 +490,18 @@
                                 </Grid.ColumnDefinitions>
                                 <TextBlock Grid.Row="0" Grid.Column="0" Margin="0,0,8,8" VerticalAlignment="Center" Text="Bot Token" ToolTip="This label identifies the adjacent secret field where you enter the Telegram bot token used for notifications."/>
                                 <local:SecretFieldControl x:Name="TelegramBotTokenControl" Grid.Row="0" Grid.Column="1" Margin="0,0,0,8" ToolTip="Enter the Telegram bot token used for notifications"/>
-                                <TextBlock Grid.Row="1" Grid.Column="0" Margin="0,0,8,0" VerticalAlignment="Center" Text="Chat ID" ToolTip="This label identifies the adjacent field where you enter the Telegram chat id that receives AlTrader messages."/>
-                                <TextBox x:Name="TelegramChatIdTextBox" Grid.Row="1" Grid.Column="1" ToolTip="Enter the Telegram chat id that receives AlTrader notifications"/>
+                                <TextBlock Grid.Row="1" Grid.Column="0" Margin="0,0,8,0" VerticalAlignment="Center" Text="Chat ID" ToolTip="This field is structured service-routing data. Enter the Telegram chat id that should receive AlTrader messages."/>
+                                <TextBox x:Name="TelegramChatIdTextBox" Grid.Row="1" Grid.Column="1" ToolTip="Enter the Telegram chat id that should receive AlTrader notifications. The wizard will warn if it does not look like a standard numeric chat id."/>
+                                <Button x:Name="TelegramTestButton" Grid.Row="2" Grid.Column="1" Width="140" Height="30" Margin="0,12,0,0" HorizontalAlignment="Left" Content="Test Connection" Click="TelegramTestButton_OnClick" ToolTip="Validate only the Telegram connection details in this section."/>
+                                <TextBlock x:Name="TelegramTestResultTextBlock" Grid.Row="3" Grid.Column="1" Margin="0,8,0,0" Foreground="DimGray" TextWrapping="Wrap" Text="Latest section test result will appear here for Telegram only." ToolTip="This text shows the latest test result for the Telegram section only."/>
                             </Grid>
                         </GroupBox>
 
                         <GroupBox Header="AgentMail" Margin="0,16,0,0" ToolTip="Enter the AgentMail delivery settings used for AlTrader reports">
                             <Grid Margin="12">
                                 <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
                                     <RowDefinition Height="Auto"/>
                                     <RowDefinition Height="Auto"/>
                                     <RowDefinition Height="Auto"/>
@@ -497,10 +512,12 @@
                                 </Grid.ColumnDefinitions>
                                 <TextBlock Grid.Row="0" Grid.Column="0" Margin="0,0,8,8" VerticalAlignment="Center" Text="API Key" ToolTip="This label identifies the adjacent secret field where you enter the AgentMail API key used for report delivery."/>
                                 <local:SecretFieldControl x:Name="AgentMailApiKeyControl" Grid.Row="0" Grid.Column="1" Margin="0,0,0,8" ToolTip="Enter the AgentMail API key used for report delivery"/>
-                                <TextBlock Grid.Row="1" Grid.Column="0" Margin="0,0,8,8" VerticalAlignment="Center" Text="Sender Address or Inbox ID" ToolTip="This label identifies the adjacent field where you enter the AgentMail sender address or inbox id."/>
-                                <TextBox x:Name="AgentMailFromIdTextBox" Grid.Row="1" Grid.Column="1" Margin="0,0,0,8" ToolTip="Enter the AgentMail sender address or inbox id"/>
-                                <TextBlock Grid.Row="2" Grid.Column="0" Margin="0,0,8,0" VerticalAlignment="Center" Text="Recipient Email" ToolTip="This label identifies the adjacent field where you enter the email address that should receive AlTrader reports."/>
-                                <TextBox x:Name="AgentMailRecipientTextBox" Grid.Row="2" Grid.Column="1" ToolTip="Enter the email address that should receive AlTrader reports"/>
+                                <TextBlock Grid.Row="1" Grid.Column="0" Margin="0,0,8,8" VerticalAlignment="Center" Text="Sender Address or Inbox ID" ToolTip="This field is structured mail-routing data. Enter either a sender email-style address or an AgentMail inbox id that the setup AI should configure."/>
+                                <TextBox x:Name="AgentMailFromIdTextBox" Grid.Row="1" Grid.Column="1" Margin="0,0,0,8" ToolTip="Enter structured mail-routing data for AgentMail, such as a sender address or inbox id."/>
+                                <TextBlock Grid.Row="2" Grid.Column="0" Margin="0,0,8,0" VerticalAlignment="Center" Text="Recipient Email" ToolTip="This field is structured contact data and should look like a usable email address because AgentMail delivery depends on it."/>
+                                <TextBox x:Name="AgentMailRecipientTextBox" Grid.Row="2" Grid.Column="1" ToolTip="Enter the recipient email for AlTrader reports. The wizard will warn if the value does not look like a standard email format."/>
+                                <Button x:Name="AgentMailTestButton" Grid.Row="3" Grid.Column="1" Width="140" Height="30" Margin="0,12,0,0" HorizontalAlignment="Left" Content="Test Connection" Click="AgentMailTestButton_OnClick" ToolTip="Validate only the AgentMail connection details in this section."/>
+                                <TextBlock x:Name="AgentMailTestResultTextBlock" Grid.Row="4" Grid.Column="1" Margin="0,8,0,0" Foreground="DimGray" TextWrapping="Wrap" Text="Latest section test result will appear here for AgentMail only." ToolTip="This text shows the latest test result for the AgentMail section only."/>
                             </Grid>
                         </GroupBox>
 
@@ -511,18 +528,22 @@
                                     <RowDefinition Height="Auto"/>
                                     <RowDefinition Height="Auto"/>
                                     <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
                                 </Grid.RowDefinitions>
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="240"/>
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
-                                <CheckBox x:Name="AlpacaLiveEnabledCheckBox" Grid.Row="0" Grid.Column="1" Margin="0,0,0,8" Content="Store and validate optional live credentials without enabling live trading" ToolTip="Enable this only when you want to record optional Alpaca live credentials without turning on live trading"/>
+                                <CheckBox x:Name="AlpacaLiveEnabledCheckBox" Grid.Row="0" Grid.Column="1" Margin="0,0,0,8" Content="Store and validate optional live credentials without enabling live trading" Checked="AlpacaLiveEnabledCheckBox_OnChanged" Unchecked="AlpacaLiveEnabledCheckBox_OnChanged" ToolTip="Enable this only when you want to record optional Alpaca live credentials without turning on live trading"/>
                                 <TextBlock Grid.Row="1" Grid.Column="0" Margin="0,0,8,8" VerticalAlignment="Center" Text="API Key" ToolTip="This label identifies the adjacent secret field where you enter the optional Alpaca live API key."/>
                                 <local:SecretFieldControl x:Name="AlpacaLiveApiKeyControl" Grid.Row="1" Grid.Column="1" Margin="0,0,0,8" ToolTip="Enter the optional Alpaca live API key"/>
                                 <TextBlock Grid.Row="2" Grid.Column="0" Margin="0,0,8,8" VerticalAlignment="Center" Text="Secret Key" ToolTip="This label identifies the adjacent secret field where you enter the optional Alpaca live secret key."/>
                                 <local:SecretFieldControl x:Name="AlpacaLiveSecretControl" Grid.Row="2" Grid.Column="1" Margin="0,0,0,8" ToolTip="Enter the optional Alpaca live secret key"/>
-                                <TextBlock Grid.Row="3" Grid.Column="0" Margin="0,0,8,0" VerticalAlignment="Center" Text="Base URL" ToolTip="This label identifies the adjacent field where you enter the Alpaca live API base URL."/>
-                                <TextBox x:Name="AlpacaLiveBaseUrlTextBox" Grid.Row="3" Grid.Column="1" ToolTip="Enter the Alpaca live API base URL"/>
+                                <TextBlock Grid.Row="3" Grid.Column="0" Margin="0,0,8,0" VerticalAlignment="Center" Text="Base URL" ToolTip="This field is structured service-endpoint data. Enter the full HTTP or HTTPS base URL for the optional Alpaca live API."/>
+                                <TextBox x:Name="AlpacaLiveBaseUrlTextBox" Grid.Row="3" Grid.Column="1" ToolTip="Enter the full HTTP or HTTPS base URL for the optional Alpaca live API. The wizard will warn if the value does not look like a URL."/>
+                                <Button x:Name="AlpacaLiveTestButton" Grid.Row="4" Grid.Column="1" Width="140" Height="30" Margin="0,12,0,0" HorizontalAlignment="Left" Content="Test Connection" Click="AlpacaLiveTestButton_OnClick" ToolTip="Validate only the optional Alpaca live connection details in this section."/>
+                                <TextBlock x:Name="AlpacaLiveTestResultTextBlock" Grid.Row="5" Grid.Column="1" Margin="0,8,0,0" Foreground="DimGray" TextWrapping="Wrap" Text="Latest section test result will appear here for optional Alpaca live only." ToolTip="This text shows the latest test result for the optional Alpaca live section only."/>
                             </Grid>
                         </GroupBox>
                     </StackPanel>
@@ -653,7 +674,7 @@
                 </ScrollViewer>
             </TabItem>
 
-            <TabItem Header="7. Review + Export" ToolTip="Save or load drafts, run validations, export the stand-up package zip, and review the visible wizard log">
+            <TabItem Header="7. Review + Validate" ToolTip="Save or load drafts, run validations, and review the visible wizard log before the final approval tab.">
                 <Grid Margin="16">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
@@ -662,14 +683,13 @@
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
                     <StackPanel Orientation="Horizontal">
-                        <Button Width="140" Height="32" Margin="0,0,10,0" Content="Save Draft" Click="SaveDraftButton_OnClick" ToolTip="Save the current wizard values to an encrypted local draft"/>
-                        <Button Width="140" Height="32" Margin="0,0,10,0" Content="Load Draft" Click="LoadDraftButton_OnClick" ToolTip="Load the previously saved encrypted local draft into the wizard"/>
-                        <Button Width="140" Height="32" Margin="0,0,10,0" Content="Wipe Draft" Click="WipeDraftButton_OnClick" ToolTip="Delete the saved encrypted local draft from this machine"/>
+                        <Button Width="140" Height="32" Margin="0,0,10,0" Content="Save Draft" Click="SaveDraftButton_OnClick" ToolTip="Save the current non-secret wizard values to an encrypted local draft"/>
+                        <Button Width="140" Height="32" Margin="0,0,10,0" Content="Load Draft" Click="LoadDraftButton_OnClick" ToolTip="Load the previously saved non-secret encrypted local draft into the wizard"/>
+                        <Button Width="140" Height="32" Margin="0,0,10,0" Content="Wipe Draft" Click="WipeDraftButton_OnClick" ToolTip="Delete the saved draft and clear the current wizard fields back to defaults"/>
                         <Button Width="160" Height="32" Margin="0,0,10,0" Content="Run Validations" Click="RunValidationsButton_OnClick" ToolTip="Run topology and service validations using the current wizard values"/>
-                        <Button Width="220" Height="32" Content="Export Stand-Up Package Zip" Click="ExportButton_OnClick" ToolTip="Export the complete stand-up package zip after validations pass"/>
                     </StackPanel>
                     <TextBlock Grid.Row="1" Margin="0,12,0,12" TextWrapping="Wrap"
-                               Text="Review the log below. The exported files are the complete non-secret stand-up package. Hand that package zip to the setup AI."/>
+                               Text="Review the log below. Run validations here first. The final approval and stand-up package export are on Tab 8 and remain unavailable until validation passes."/>
                     <DockPanel Grid.Row="2" Margin="0,0,0,8" LastChildFill="False">
                         <TextBlock DockPanel.Dock="Left"
                                    VerticalAlignment="Center"
@@ -686,6 +706,44 @@
                                 Click="ClearLogButton_OnClick"/>
                     </DockPanel>
                     <TextBox x:Name="LogTextBox" Grid.Row="3" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" TextWrapping="Wrap" AcceptsReturn="True" IsReadOnly="True" ToolTip="This visible log display shows wizard activity, validation messages, and export status"/>
+                </Grid>
+            </TabItem>
+
+            <TabItem x:Name="ApprovalTab" Header="8. Approval + Export" ToolTip="Review the redacted configuration summary, approve it explicitly, inspect local approval history, and export the stand-up package." IsEnabled="False">
+                <Grid Margin="16">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <TextBlock TextWrapping="Wrap"
+                               Text="Review the redacted configuration summary below. This tab is enabled only after validations pass. Export remains disabled until you explicitly approve this summary."/>
+                    <TextBox x:Name="ApprovalSummaryTextBox"
+                             Grid.Row="1"
+                             Margin="0,12,0,12"
+                             AcceptsReturn="True"
+                             IsReadOnly="True"
+                             TextWrapping="Wrap"
+                             VerticalScrollBarVisibility="Auto"
+                             HorizontalScrollBarVisibility="Auto"
+                             ToolTip="This scrollable text field shows the redacted configuration summary that must be approved before export."/>
+                    <TextBlock Grid.Row="2" FontWeight="SemiBold" Text="Local Approval History" ToolTip="This label identifies the local approval history displayed below for audit and review."/>
+                    <TextBox x:Name="ApprovalHistoryTextBox"
+                             Grid.Row="3"
+                             Margin="0,8,0,12"
+                             Height="130"
+                             AcceptsReturn="True"
+                             IsReadOnly="True"
+                             TextWrapping="Wrap"
+                             VerticalScrollBarVisibility="Auto"
+                             HorizontalScrollBarVisibility="Auto"
+                             ToolTip="This scrollable text field shows the local approval history saved on this machine."/>
+                    <StackPanel Grid.Row="4" Orientation="Horizontal">
+                        <Button x:Name="ApproveSummaryButton" Width="180" Height="32" Margin="0,0,10,0" Content="Approve Summary" Click="ApproveSummaryButton_OnClick" ToolTip="Start the explicit approval workflow for the redacted configuration summary."/>
+                        <Button x:Name="ExportButton" Width="220" Height="32" Content="Export Stand-Up Package Zip" Click="ExportButton_OnClick" IsEnabled="False" ToolTip="Export the complete stand-up package zip after validations pass and the summary is explicitly approved."/>
+                    </StackPanel>
                 </Grid>
             </TabItem>
         </TabControl>

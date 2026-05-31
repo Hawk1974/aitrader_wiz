@@ -20,11 +20,12 @@ public static class DraftStorage
     {
         VerboseLogger.Info("DraftStorage.Save invoked.");
         Directory.CreateDirectory(DraftDirectory);
-        var json = JsonSerializer.Serialize(state, new JsonSerializerOptions { WriteIndented = true });
+        var draftSafeState = WizardStateSanitizer.CreateDraftSafeCopy(state);
+        var json = JsonSerializer.Serialize(draftSafeState, new JsonSerializerOptions { WriteIndented = true });
         var plaintext = Encoding.UTF8.GetBytes(json);
         var protectedBytes = ProtectedData.Protect(plaintext, null, DataProtectionScope.CurrentUser);
         File.WriteAllBytes(DraftPath, protectedBytes);
-        VerboseLogger.Info($"Draft saved to {DraftPath}.");
+        VerboseLogger.Info($"Non-secret draft saved to {DraftPath}.");
     }
 
     public static WizardState? Load()

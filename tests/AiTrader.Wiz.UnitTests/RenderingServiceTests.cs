@@ -71,6 +71,39 @@ public sealed class RenderingServiceTests
     }
 
     [Fact]
+    public void RenderApprovalSummary_RedactsSecrets()
+    {
+        var state = BuildState();
+
+        var markdown = RenderingService.RenderApprovalSummary(state);
+
+        Assert.Contains("Provider API Key: [redacted]", markdown, StringComparison.Ordinal);
+        Assert.DoesNotContain("api-key", markdown, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void DraftSafeCopy_ClearsSecretsButPreservesNonSecretFields()
+    {
+        var state = BuildState();
+        state.AlpacaPaper.ApiKey = "paper-key";
+        state.AlpacaPaper.SecretKey = "paper-secret";
+        state.Telegram.BotToken = "token";
+        state.AgentMail.ApiKey = "agentmail";
+        state.ValidationResults.Add(new ValidationRecord { Key = "paper", Status = ValidationStatus.Passed, Message = "ok" });
+
+        var sanitized = WizardStateSanitizer.CreateDraftSafeCopy(state);
+
+        Assert.Equal(string.Empty, sanitized.HermesAiProvider.ApiKey);
+        Assert.Equal(string.Empty, sanitized.AlpacaPaper.ApiKey);
+        Assert.Equal(string.Empty, sanitized.AlpacaPaper.SecretKey);
+        Assert.Equal(string.Empty, sanitized.Telegram.BotToken);
+        Assert.Equal(string.Empty, sanitized.AgentMail.ApiKey);
+        Assert.Empty(sanitized.ValidationResults);
+        Assert.Equal(state.ClientIdentity.DeploymentName, sanitized.ClientIdentity.DeploymentName);
+        Assert.Equal(state.Telegram.ChatId, sanitized.Telegram.ChatId);
+    }
+
+    [Fact]
     public void RenderTargetStandup_ContainsAccessAndPlacementInstructions()
     {
         var state = BuildState();

@@ -7,6 +7,13 @@ public partial class SecretFieldControl : UserControl
 {
     private bool _isSynchronizing;
 
+    public static readonly RoutedEvent ValueChangedEvent =
+        EventManager.RegisterRoutedEvent(
+            nameof(ValueChanged),
+            RoutingStrategy.Bubble,
+            typeof(RoutedEventHandler),
+            typeof(SecretFieldControl));
+
     public static readonly DependencyProperty ValueProperty =
         DependencyProperty.Register(
             nameof(Value),
@@ -27,6 +34,12 @@ public partial class SecretFieldControl : UserControl
 
     public bool IsRevealed { get; private set; }
 
+    public event RoutedEventHandler ValueChanged
+    {
+        add => AddHandler(ValueChangedEvent, value);
+        remove => RemoveHandler(ValueChangedEvent, value);
+    }
+
     private static void OnValueChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
     {
         if (d is not SecretFieldControl control)
@@ -35,6 +48,7 @@ public partial class SecretFieldControl : UserControl
         }
 
         control.SyncInputs(e.NewValue as string ?? string.Empty);
+        control.RaiseEvent(new RoutedEventArgs(ValueChangedEvent, control));
     }
 
     private void SyncInputs(string value)

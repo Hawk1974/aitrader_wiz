@@ -114,6 +114,8 @@ public static class TopologyService
 
     public static void ApplyDefaultDeploymentModel(WizardState state)
     {
+        ApplyDefaultTargetAssignments(state);
+
         foreach (var computer in state.Computers)
         {
             EnsureServicePlacements(computer);
@@ -134,6 +136,30 @@ public static class TopologyService
                 state.Connectivity.RequiresTailscale && (hasDesktop || isAuthoritativeBackend)
                     ? DefaultBackendServicePlacement(computer)
                     : ServicePlacementMode.NotOnThisComputer);
+        }
+    }
+
+    public static void ApplyDefaultTargetAssignments(WizardState state)
+    {
+        foreach (var target in state.Targets)
+        {
+            target.Roles.Clear();
+            target.IsPrimaryDesktop = false;
+            target.IsAuthoritativeBackend = false;
+        }
+
+        var backendTarget = state.Targets.FirstOrDefault(target => target.Kind is RuntimeTargetKind.Wsl or RuntimeTargetKind.Linux);
+        if (backendTarget is not null)
+        {
+            backendTarget.Roles.Add(RoleKind.HermesBackend);
+            backendTarget.IsAuthoritativeBackend = true;
+        }
+
+        var desktopTarget = state.Targets.FirstOrDefault(target => target.Kind is RuntimeTargetKind.Windows or RuntimeTargetKind.MacOs);
+        if (desktopTarget is not null)
+        {
+            desktopTarget.Roles.Add(RoleKind.HermesDesktop);
+            desktopTarget.IsPrimaryDesktop = true;
         }
     }
 

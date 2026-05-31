@@ -69,6 +69,34 @@ public sealed class TopologyServiceTests
         Assert.Contains(errors, error => error.Contains("authoritative", StringComparison.OrdinalIgnoreCase));
     }
 
+    [Fact]
+    public void ApplyDefaultTargetAssignments_AssignsDesktopAndBackendFromDerivedTopology()
+    {
+        var state = new WizardState
+        {
+            Computers =
+            [
+                new ComputerDefinition
+                {
+                    Id = "computer_1",
+                    Label = "Test",
+                    OperatingSystem = OperatingSystemKind.Windows,
+                    UsesWslBackend = true,
+                }
+            ]
+        };
+        state.Targets = TopologyService.DeriveTargets(state.Computers);
+
+        TopologyService.ApplyDefaultTargetAssignments(state);
+
+        var windowsTarget = Assert.Single(state.Targets.Where(target => target.Kind == RuntimeTargetKind.Windows));
+        var wslTarget = Assert.Single(state.Targets.Where(target => target.Kind == RuntimeTargetKind.Wsl));
+        Assert.Contains(RoleKind.HermesDesktop, windowsTarget.Roles);
+        Assert.True(windowsTarget.IsPrimaryDesktop);
+        Assert.Contains(RoleKind.HermesBackend, wslTarget.Roles);
+        Assert.True(wslTarget.IsAuthoritativeBackend);
+    }
+
     private static WizardState BuildValidState()
     {
         return new WizardState

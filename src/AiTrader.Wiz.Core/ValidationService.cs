@@ -1,4 +1,5 @@
 using System.Net.Http.Headers;
+using System.Text.RegularExpressions;
 using System.Text.Json;
 
 namespace AiTrader.Wiz.Core;
@@ -193,6 +194,41 @@ public sealed class ValidationService(HttpClient httpClient)
             : Failed("topology", string.Join(" ", errors));
     }
 
+    public ValidationRecord ValidateInputConventions(WizardState state)
+    {
+        var warnings = new List<string>();
+
+        WarnIfQuestionableEmail(warnings, "Main contact email", state.ClientIdentity.MainContactEmail);
+        WarnIfQuestionableEmail(warnings, "AgentMail recipient email", state.AgentMail.RecipientEmail);
+        WarnIfQuestionableEmail(warnings, "AgentMail sender address or inbox id", state.AgentMail.FromId, allowInboxId: true);
+
+        WarnIfQuestionableUrl(warnings, "Hermes AI provider base URL", state.HermesAiProvider.BaseUrl);
+        WarnIfQuestionableUrl(warnings, "Alpaca paper base URL", state.AlpacaPaper.BaseUrl);
+        WarnIfQuestionableUrl(warnings, "Optional Alpaca live base URL", state.AlpacaLive.BaseUrl, ignoreWhenBlank: !state.AlpacaLive.Enabled);
+
+        WarnIfQuestionableHost(warnings, "Backend target host or IP", state.Connectivity.BackendTargetHostOrIp);
+        WarnIfQuestionableHost(warnings, "Desktop target host or IP", state.Connectivity.DesktopTargetHostOrIp);
+
+        foreach (var computer in state.Computers)
+        {
+            if (string.IsNullOrWhiteSpace(computer.Label))
+            {
+                warnings.Add($"{computer.Id} does not have a recognizable computer name.");
+            }
+
+            if (computer.AccessMode is AccessMode.Ssh or AccessMode.Tailscale)
+            {
+                WarnIfQuestionableHost(warnings, $"{computer.Label} access host or IP", computer.AccessHostOrIp);
+            }
+        }
+
+        WarnIfQuestionableTelegramChatId(warnings, state.Telegram.ChatId);
+
+        return warnings.Count == 0
+            ? Passed("input_format", "Structured input fields look reasonable.")
+            : Warning("input_format", string.Join(" ", warnings));
+    }
+
     private async Task<ValidationRecord> ValidateOpenAiCompatibleProviderAsync(
         string key,
         string baseUrl,
@@ -304,6 +340,65 @@ public sealed class ValidationService(HttpClient httpClient)
     private static ValidationRecord Warning(string key, string message) => new() { Key = key, Status = ValidationStatus.PassedWithWarning, Message = message };
     private static ValidationRecord Failed(string key, string message) => new() { Key = key, Status = ValidationStatus.FailedBlocking, Message = message };
     private static ValidationRecord Skipped(string key, string message) => new() { Key = key, Status = ValidationStatus.Skipped, Message = message };
+
+    private static void WarnIfQuestionableEmail(List<string> warnings, string fieldName, string value, bool allowInboxId = false)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return;
+        }
+
+        if (allowInboxId && !value.Contains('@'))
+        {
+            return;
+        }
+
+        if (!Regex.IsMatch(value.Trim(), @"^[^@\s]+@[^@\s]+\.[^@\s]+$"))
+        {
+            warnings.Add($"{fieldName} does not look like a standard email address.");
+        }
+    }
+
+    private static void WarnIfQuestionableUrl(List<string> warnings, string fieldName, string value, bool ignoreWhenBlank = false)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return;
+        }
+
+        if (!Uri.TryCreate(value.Trim(), UriKind.Absolute, out var uri) ||
+            (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps))
+        {
+            warnings.Add($"{fieldName} does not look like a valid HTTP or HTTPS URL.");
+        }
+    }
+
+    private static void WarnIfQuestionableHost(List<string> warnings, string fieldName, string value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return;
+        }
+
+        var trimmed = value.Trim();
+        if (trimmed.Contains(' '))
+        {
+            warnings.Add($"{fieldName} contains spaces and may not be a valid host name or IP address.");
+        }
+    }
+
+    private static void WarnIfQuestionableTelegramChatId(List<string> warnings, string value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return;
+        }
+
+        if (!Regex.IsMatch(value.Trim(), @"^-?\d+$"))
+        {
+            warnings.Add("Telegram Chat ID does not look like a standard numeric Telegram chat id.");
+        }
+    }
 
     private static IReadOnlyList<ServiceKind> GetRequiredServices(WizardState state)
     {
