@@ -6,3 +6,4 @@ TestResults/
 *.user
 *.suo
 *.pdb
+tests/.local/

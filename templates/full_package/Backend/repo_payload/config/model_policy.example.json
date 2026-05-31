@@ -1,0 +1,7 @@
+{
+  "schema_version": "1.0.0",
+  "provider": "hermes_attached_ai",
+  "prompt_file": "prompts/hermes_congressional_trade_analyzer_prompt.md",
+  "output_schema": "schemas/model_decision.schema.json",
+  "reject_forbidden_broker_fields": true
+}

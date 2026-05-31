@@ -86,7 +86,7 @@ public sealed class TopologyServiceTests
                     DisplayName = "Linux",
                     Kind = RuntimeTargetKind.Linux,
                     ComputerId = "computer_2",
-                    Roles = [RoleKind.HermesBackend, RoleKind.LmStudio],
+                    Roles = [RoleKind.HermesBackend],
                     IsAuthoritativeBackend = true,
                 },
                 new RuntimeTarget
@@ -98,7 +98,11 @@ public sealed class TopologyServiceTests
                     Roles = [RoleKind.HermesDesktop],
                     IsPrimaryDesktop = true,
                 }
-            ]
+            ],
+            HermesAiProvider = new HermesAiProviderConfiguration
+            {
+                ProviderKey = "openai",
+            }
         };
     }
 }

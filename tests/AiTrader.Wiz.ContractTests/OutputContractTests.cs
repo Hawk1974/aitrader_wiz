@@ -15,6 +15,7 @@ public sealed class OutputContractTests
         Assert.Contains("runtime_targets:", yaml, StringComparison.Ordinal);
         Assert.Contains("connectivity:", yaml, StringComparison.Ordinal);
         Assert.Contains("cash_allocation_policy:", yaml, StringComparison.Ordinal);
+        Assert.Contains("hermes_ai_provider:", yaml, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -25,16 +26,19 @@ public sealed class OutputContractTests
         Assert.Contains("File Precedence", markdown, StringComparison.Ordinal);
         Assert.Contains("Bring-Up Order", markdown, StringComparison.Ordinal);
         Assert.Contains("backend target", markdown, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("SETUP_AI_EXECUTION_RULES.md", markdown, StringComparison.Ordinal);
     }
 
     [Fact]
-    public void RenderAll_IncludesAllRequiredOverlayFiles()
+    public void RenderAll_IncludesAllRequiredPackageFiles()
     {
         var files = RenderingService.RenderAll(SampleState()).Select(artifact => artifact.FileName).ToHashSet(StringComparer.Ordinal);
 
         Assert.Contains("CLIENT_INTAKE.yaml", files);
         Assert.Contains("CLIENT_SUMMARY.md", files);
         Assert.Contains("INSTRUCTION.md", files);
+        Assert.Contains("SETUP_AI_EXECUTION_RULES.md", files);
+        Assert.Contains("PACKAGE_MANIFEST.md", files);
         Assert.Contains("VALIDATION_SUMMARY.md", files);
         Assert.Contains("SECRETS_STATUS.md", files);
         Assert.Contains("TARGET_01_LINUX_AUTHORITATIVE.md", files);
@@ -73,7 +77,7 @@ public sealed class OutputContractTests
                     DisplayName = "Linux",
                     Kind = RuntimeTargetKind.Linux,
                     ComputerId = "computer_2",
-                    Roles = [RoleKind.HermesBackend, RoleKind.LmStudio],
+                    Roles = [RoleKind.HermesBackend],
                     IsAuthoritativeBackend = true,
                 },
                 new RuntimeTarget
@@ -86,6 +90,13 @@ public sealed class OutputContractTests
                     IsPrimaryDesktop = true,
                 }
             ],
+            HermesAiProvider = new HermesAiProviderConfiguration
+            {
+                ProviderKey = "openai",
+                BaseUrl = "https://api.openai.com/v1",
+                ModelName = "gpt-4.1",
+                ApiKey = "api-key",
+            },
             ValidationResults = [new ValidationRecord { Key = "topology", Status = ValidationStatus.Passed, Message = "ok" }]
         };
 }

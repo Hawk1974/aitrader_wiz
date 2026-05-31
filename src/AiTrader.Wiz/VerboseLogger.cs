@@ -1,26 +1,31 @@
 using System.IO;
 using System.Text;
+using AiTrader.Wiz.Core;
 
 namespace AiTrader.Wiz;
 
 public static class VerboseLogger
 {
-    private const string ApplicationDataFolderName = "AlTraderConfigWizard";
+    private const string ProductFolderName = "AlTrader";
+    private const string ApplicationFolderName = "ConfigWizard";
+    private const string LogsFolderName = "Logs";
     private static readonly object SyncRoot = new();
     private static readonly string LogDirectory = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-        ApplicationDataFolderName,
-        "logs");
+        ProductFolderName,
+        ApplicationFolderName,
+        LogsFolderName);
     private static readonly string SessionId = DateTime.UtcNow.ToString("yyyyMMddTHHmmssZ");
     private static readonly string LogPath = Path.Combine(LogDirectory, $"AlTraderConfigWizard_{SessionId}.log");
 
     public static string CurrentLogPath => LogPath;
+    public static string CurrentLogDisplayPath => PathDisplayFormatter.CompactPath(LogPath);
 
     public static void Initialize()
     {
         Directory.CreateDirectory(LogDirectory);
         Info("Verbose logger initialized.");
-        Info($"Session log path: {LogPath}");
+        Info($"Session log path: {CurrentLogDisplayPath}");
     }
 
     public static void Info(string message) => WriteLine("INFO", message);

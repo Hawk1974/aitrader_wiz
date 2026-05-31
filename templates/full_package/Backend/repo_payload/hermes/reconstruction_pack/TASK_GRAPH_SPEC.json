@@ -1,0 +1,105 @@
+{
+  "schema_version": "1.0.0",
+  "workflow_name": "altrader_paper_manual_daily_cycle",
+  "owner": "highmarshal",
+  "description": "Canonical AlTrader paper-manual trading-day workflow graph. High Marshal creates this graph at kickoff.",
+  "tasks": [
+    {
+      "key": "orchestrator_open",
+      "title": "[AI-Trader][paper_manual][orchestrator] Open the trading-day workflow",
+      "assignee": "highmarshal",
+      "parents": [],
+      "branch_on_complete": "health_check"
+    },
+    {
+      "key": "health_check",
+      "title": "[AI-Trader][health_only][health_check] Validate startup health and emergency-stop state",
+      "assignee": "chirurgeon",
+      "parents": ["orchestrator_open"],
+      "branch_on_complete": "source_intake"
+    },
+    {
+      "key": "source_intake",
+      "title": "[AI-Trader][observe_only][source_intake] Poll Capitol Trades and persist raw artifacts",
+      "assignee": "scryer",
+      "parents": ["health_check"],
+      "branch_on_complete": "normalization"
+    },
+    {
+      "key": "normalization",
+      "title": "[AI-Trader][observe_only][normalization] Normalize the disclosure batch",
+      "assignee": "runesmith",
+      "parents": ["source_intake"],
+      "branch_on_complete": "model_analysis",
+      "branch_on_no_action": "reporting"
+    },
+    {
+      "key": "model_analysis",
+      "title": "[AI-Trader][analysis_only][model_analysis] Analyze normalized buy candidates",
+      "assignee": "augur",
+      "parents": ["normalization"],
+      "branch_on_complete": "broker_context",
+      "branch_on_no_action": "reporting"
+    },
+    {
+      "key": "broker_context",
+      "title": "[AI-Trader][paper_manual][broker_context] Gather paper account and market context",
+      "assignee": "coinmaster",
+      "parents": ["model_analysis"],
+      "branch_on_complete": "risk_review",
+      "branch_on_no_action": "reporting"
+    },
+    {
+      "key": "risk_review",
+      "title": "[AI-Trader][risk_review][risk_gate] Apply deterministic sizing and risk gates",
+      "assignee": "warden",
+      "parents": ["broker_context"],
+      "branch_on_complete": "manual_approval",
+      "branch_on_no_action": "reporting"
+    },
+    {
+      "key": "manual_approval",
+      "title": "[AI-Trader][paper_manual][manual_approval] Queue the candidate for human approval",
+      "assignee": "overlord",
+      "parents": ["risk_review"],
+      "branch_on_complete": "broker_submission",
+      "branch_on_no_action": "reporting"
+    },
+    {
+      "key": "broker_submission",
+      "title": "[AI-Trader][paper_manual][broker_submission] Submit the approved paper trade",
+      "assignee": "gatekeeper",
+      "parents": ["manual_approval"],
+      "branch_on_complete": "order_reconciliation",
+      "branch_on_no_action": "reporting"
+    },
+    {
+      "key": "order_reconciliation",
+      "title": "[AI-Trader][paper_manual][order_reconciliation] Reconcile order and position state",
+      "assignee": "tracker",
+      "parents": ["broker_submission"],
+      "branch_on_complete": "reporting"
+    },
+    {
+      "key": "reporting",
+      "title": "[AI-Trader][daily_cycle][reporting] Write the daily summary and deliver notifications",
+      "assignee": "bard",
+      "parents": ["order_reconciliation"],
+      "allowed_alternate_parents": [
+        "normalization",
+        "model_analysis",
+        "broker_context",
+        "risk_review",
+        "manual_approval",
+        "broker_submission"
+      ],
+      "branch_on_complete": "orchestrator_close"
+    },
+    {
+      "key": "orchestrator_close",
+      "title": "[AI-Trader][paper_manual][orchestrator] Close the trading-day workflow",
+      "assignee": "highmarshal",
+      "parents": ["reporting"]
+    }
+  ]
+}

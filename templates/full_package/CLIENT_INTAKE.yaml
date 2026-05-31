@@ -1,0 +1,97 @@
+altrader_client_intake:
+  client_identity:
+    client_name: ""
+    main_contact_name: ""
+    main_contact_email: ""
+    deployment_name: ""
+    notes: ""
+
+  hardware_layout:
+    linux_backend_hostname: ""
+    linux_backend_os: "Ubuntu-based Linux on NVIDIA DGX Spark"
+    linux_backend_username: ""
+    linux_backend_model_host: "LM Studio"
+    linux_backend_model_name: "Qwen 3.6 or comparable"
+    windows_desktop_hostname: ""
+    windows_desktop_username: ""
+
+  tailscale:
+    tailnet_name: ""
+    linux_backend_tailscale_name: ""
+    linux_backend_tailscale_ip: ""
+    windows_desktop_tailscale_name: ""
+    windows_desktop_tailscale_ip: ""
+    ssh_username_on_linux_backend: ""
+    ssh_port: "22"
+
+  lm_studio_backend:
+    used: true
+    lm_studio_base_url: ""
+    lm_studio_port: ""
+    model_id: ""
+    api_type: "openai-compatible"
+    api_key_if_used: ""
+
+  hermes_backend_runtime:
+    hermes_home: "/opt/hermes"
+    altrader_repo_path: "/opt/hermes/altrader"
+    hermes_data_path: "/srv/hermes"
+    altrader_data_path: "/srv/hermes/altrader"
+    models_path: "/srv/models"
+    logs_path: "/var/log/hermes"
+    backups_path: "/srv/backups"
+    timezone: "America/New_York"
+
+  alpaca_paper:
+    enabled: true
+    account_name: ""
+    api_key: ""
+    secret_key: ""
+    base_url: "https://paper-api.alpaca.markets"
+
+  alpaca_live:
+    enabled: false
+    api_key: ""
+    secret_key: ""
+    base_url: "https://api.alpaca.markets"
+    live_trading_allowed_by_client: false
+
+  telegram:
+    enabled: true
+    bot_token: ""
+    home_channel_or_chat_id: ""
+    allowed_users_csv: ""
+
+  agentmail:
+    enabled: true
+    api_key: ""
+    from_id_or_sender: ""
+    report_recipient_email: ""
+
+  hermes_ai_provider:
+    provider_mode: "lm_studio_on_linux_backend"
+    base_url: ""
+    api_key_if_required: ""
+    model_name: ""
+
+  schedule_policy:
+    high_marshal_start_time: "09:00"
+    archivist_time: "17:00"
+    steward_interval_minutes: 10
+    source_monitor_interval_minutes: 30
+    active_trade_supervisor_interval_minutes: 5
+    use_us_market_holiday_guard: true
+
+  operations_policy:
+    paper_trading_enabled: true
+    live_trading_enabled: false
+    send_telegram_alerts: true
+    send_email_reports: true
+    require_manual_approval_for_live_mode: true
+
+  desktop_connection:
+    use_windows_hermes_desktop: true
+    desktop_connects_over_tailscale: true
+    desktop_should_hold_alpaca_secrets: false
+    desktop_should_hold_agentmail_secrets: false
+    desktop_should_hold_telegram_secrets: false

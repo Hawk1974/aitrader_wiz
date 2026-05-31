@@ -21,7 +21,32 @@ public enum RoleKind
 {
     HermesBackend,
     HermesDesktop,
-    LmStudio,
+}
+
+public enum AccessMode
+{
+    DirectLocal,
+    Tailscale,
+    Ssh,
+    NotNeeded,
+}
+
+public enum ServiceKind
+{
+    HermesDesktop,
+    HermesBackend,
+    Tailscale,
+    TelegramIntegration,
+    AgentMailIntegration,
+    AlpacaIntegration,
+}
+
+public enum ServicePlacementMode
+{
+    HostNative,
+    DockerContainer,
+    ExternalOnly,
+    NotOnThisComputer,
 }
 
 public enum ValidationStatus
@@ -44,6 +69,21 @@ public sealed class ComputerDefinition
     public string Label { get; set; } = string.Empty;
     public OperatingSystemKind OperatingSystem { get; set; }
     public bool UsesWslBackend { get; set; }
+    public bool DockerAvailable { get; set; }
+    public AccessMode AccessMode { get; set; } = AccessMode.DirectLocal;
+    public string AccessHostOrIp { get; set; } = string.Empty;
+    public int AccessPort { get; set; } = 22;
+    public string AccessUsername { get; set; } = string.Empty;
+    public List<ServicePlacement> ServicePlacements { get; set; } = [];
+}
+
+public sealed class ServicePlacement
+{
+    [JsonConverter(typeof(JsonStringEnumConverter))]
+    public ServiceKind Service { get; set; }
+
+    [JsonConverter(typeof(JsonStringEnumConverter))]
+    public ServicePlacementMode PlacementMode { get; set; } = ServicePlacementMode.NotOnThisComputer;
 }
 
 public sealed class RuntimeTarget
@@ -89,11 +129,12 @@ public sealed class BackendConfiguration
     public string Timezone { get; set; } = "America/New_York";
 }
 
-public sealed class LmStudioConfiguration
+public sealed class HermesAiProviderConfiguration
 {
+    public string ProviderKey { get; set; } = string.Empty;
     public string BaseUrl { get; set; } = string.Empty;
-    public string ModelId { get; set; } = string.Empty;
-    public bool ColocatedWithBackend { get; set; } = true;
+    public string ApiKey { get; set; } = string.Empty;
+    public string ModelName { get; set; } = string.Empty;
 }
 
 public sealed class AlpacaPaperConfiguration
@@ -156,7 +197,7 @@ public sealed class WizardState
     public List<RuntimeTarget> Targets { get; set; } = [];
     public ConnectivityConfiguration Connectivity { get; set; } = new();
     public BackendConfiguration Backend { get; set; } = new();
-    public LmStudioConfiguration LmStudio { get; set; } = new();
+    public HermesAiProviderConfiguration HermesAiProvider { get; set; } = new();
     public AlpacaPaperConfiguration AlpacaPaper { get; set; } = new();
     public AlpacaLiveConfiguration AlpacaLive { get; set; } = new();
     public TelegramConfiguration Telegram { get; set; } = new();

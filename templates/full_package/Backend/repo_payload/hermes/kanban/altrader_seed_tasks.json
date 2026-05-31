@@ -1,0 +1,290 @@
+{
+  "schema_version": "2.0.0",
+  "board": "altrader",
+  "tenant": "altrader",
+  "workspace_dir": "C:\\Users\\hawkc\\Documents\\Codex\\2026-05-17\\what-is-the-proper-wasy-to\\AlTrader",
+  "desktop_task_manager_path": "C:\\Users\\hawkc\\.openclaw\\claw3d\\task-manager\\tasks.json",
+  "profiles": [
+    {
+      "profile_name": "highmarshal",
+      "display_name": "High Marshal",
+      "runtime_agent_id": "altrader-94d7f6",
+      "role": "Trading-day orchestrator and final closeout authority."
+    },
+    {
+      "profile_name": "scryer",
+      "display_name": "Scryer",
+      "runtime_agent_id": "altrader-market-intake",
+      "role": "Capitol Trades intake."
+    },
+    {
+      "profile_name": "runesmith",
+      "display_name": "Runesmith",
+      "runtime_agent_id": "altrader-event-normalizer",
+      "role": "Disclosure normalization."
+    },
+    {
+      "profile_name": "augur",
+      "display_name": "Augur",
+      "runtime_agent_id": "altrader-model-analysis",
+      "role": "AI trade interpretation."
+    },
+    {
+      "profile_name": "coinmaster",
+      "display_name": "Coinmaster",
+      "runtime_agent_id": "altrader-broker-context",
+      "role": "Broker context and market status."
+    },
+    {
+      "profile_name": "warden",
+      "display_name": "Warden",
+      "runtime_agent_id": "altrader-risk-gate",
+      "role": "Deterministic risk gate."
+    },
+    {
+      "profile_name": "overlord",
+      "display_name": "Overlord",
+      "runtime_agent_id": "altrader-manual-approval",
+      "role": "Manual approval queue."
+    },
+    {
+      "profile_name": "gatekeeper",
+      "display_name": "Gatekeeper",
+      "runtime_agent_id": "altrader-execution",
+      "role": "Paper-order submission."
+    },
+    {
+      "profile_name": "tracker",
+      "display_name": "Tracker",
+      "runtime_agent_id": "altrader-order-position",
+      "role": "Order and position monitoring."
+    },
+    {
+      "profile_name": "bard",
+      "display_name": "Bard",
+      "runtime_agent_id": "altrader-reporting",
+      "role": "Reports, summaries, email, and Telegram notices."
+    },
+    {
+      "profile_name": "chirurgeon",
+      "display_name": "Chirurgeon",
+      "runtime_agent_id": "altrader-health-safety",
+      "role": "Health and safety gates."
+    },
+    {
+      "profile_name": "archivist",
+      "display_name": "Archivist",
+      "runtime_agent_id": "altrader-archivist",
+      "role": "Archives completed AlTrader Kanban tasks and refreshes the Desktop board mirror."
+    }
+  ],
+  "tasks": [
+    {
+      "id": "altrader-highmarshal-open-trading-day",
+      "title": "[AI-Trader][paper_manual][orchestrator] Open the trading-day workflow",
+      "description": "Confirm the live AlTrader task graph on the dedicated `altrader` board, verify the correct specialists are assigned, and then complete this task immediately so the deterministic trading-day sequence can proceed. This graph was created for the current run and is the source of truth. Do not execute specialist implementation work directly. Do not ask follow-up questions unless the board is missing or corrupted.",
+      "assignee_profile": "highmarshal",
+      "assigned_agent_id": "altrader-94d7f6",
+      "runtime_mode": "paper_manual",
+      "priority": 1,
+      "max_retries": 1,
+      "depends_on": [],
+      "desktop_status": "todo",
+      "notes": [
+        "High Marshal owns orchestration only.",
+        "This kickoff task must complete before specialist execution begins."
+      ]
+    },
+    {
+      "id": "altrader-chirurgeon-startup-gate",
+      "title": "[AI-Trader][health_only][health_check] Validate startup health and emergency-stop state",
+      "description": "Run this stage deterministically from the repo root by executing exactly: python scripts/operations/run_altrader_stage.py --stage-id altrader-chirurgeon-startup-gate. This wrapper owns both startup health commands, fallback validation, supported workspace-root or profile-backed context handling, and Kanban completion or blocking. Do not block this task based only on prior crash history. Re-run the deterministic stage wrapper for the current workflow cycle and use only artifacts produced for that cycle. Do not improvise alternate tool names or ask follow-up questions.",
+      "assignee_profile": "chirurgeon",
+      "assigned_agent_id": "altrader-health-safety",
+      "runtime_mode": "health_only",
+      "priority": 2,
+      "max_retries": 1,
+      "depends_on": [
+        "altrader-highmarshal-open-trading-day"
+      ],
+      "desktop_status": "blocked",
+      "notes": [
+        "Fail-closed gate for the entire trading-day flow.",
+        "Produces health artifacts and emergency-state confirmation."
+      ]
+    },
+    {
+      "id": "altrader-scryer-capitol-intake",
+      "title": "[AI-Trader][observe_only][source_intake] Poll Capitol Trades and persist raw artifacts",
+      "description": "Run this stage deterministically from the repo root by executing exactly: python scripts/operations/run_altrader_stage.py --stage-id altrader-scryer-capitol-intake. This wrapper owns artifact selection, Kanban completion or blocking, and safe no-action or failure handling for this stage. Do not improvise alternate tool names or ask follow-up questions.",
+      "assignee_profile": "scryer",
+      "assigned_agent_id": "altrader-market-intake",
+      "runtime_mode": "observe_only",
+      "priority": 3,
+      "max_retries": 1,
+      "depends_on": [
+        "altrader-chirurgeon-startup-gate"
+      ],
+      "desktop_status": "blocked",
+      "notes": [
+        "Scryer only owns source polling and artifact capture."
+      ]
+    },
+    {
+      "id": "altrader-runesmith-normalize-events",
+      "title": "[AI-Trader][observe_only][normalization] Normalize the disclosure batch",
+      "description": "Run this stage deterministically from the repo root by executing exactly: python scripts/operations/run_altrader_stage.py --stage-id altrader-runesmith-normalize-events. This wrapper owns normalization, duplicate-only no-action handling, Kanban completion or blocking, and downstream safe closeout. Do not improvise alternate tool names or ask follow-up questions.",
+      "assignee_profile": "runesmith",
+      "assigned_agent_id": "altrader-event-normalizer",
+      "runtime_mode": "observe_only",
+      "priority": 4,
+      "max_retries": 1,
+      "depends_on": [
+        "altrader-scryer-capitol-intake"
+      ],
+      "desktop_status": "blocked",
+      "notes": [
+        "Runesmith only owns normalization and quarantine."
+      ]
+    },
+    {
+      "id": "altrader-augur-analyze-candidates",
+      "title": "[AI-Trader][analysis_only][model_analysis] Analyze normalized buy candidates",
+      "description": "Run this stage deterministically from the repo root by executing exactly: python scripts/operations/run_altrader_stage.py --stage-id altrader-augur-analyze-candidates. This wrapper owns analysis, top-candidate derivation, no-action handling, Kanban completion or blocking, and downstream safe closeout. Do not improvise alternate tool names or ask follow-up questions.",
+      "assignee_profile": "augur",
+      "assigned_agent_id": "altrader-model-analysis",
+      "runtime_mode": "analysis_only",
+      "priority": 5,
+      "max_retries": 1,
+      "depends_on": [
+        "altrader-runesmith-normalize-events"
+      ],
+      "desktop_status": "blocked",
+      "notes": [
+        "Augur does not approve trades.",
+        "Analysis is advisory and feeds Warden."
+      ]
+    },
+    {
+      "id": "altrader-coinmaster-broker-context",
+      "title": "[AI-Trader][paper_manual][broker_context] Gather paper account and market context",
+      "description": "Run this stage deterministically from the repo root by executing exactly: python scripts/operations/run_altrader_stage.py --stage-id altrader-coinmaster-broker-context. This wrapper owns the concrete repo execution path for Alpaca account status and Alpaca market data. Do not call abstract Hermes tool names like alpaca_account_status or alpaca_market_data directly. If the upstream cycle has no actionable candidate, this wrapper will resolve the safe no-action path automatically. Do not ask follow-up questions.",
+      "assignee_profile": "coinmaster",
+      "assigned_agent_id": "altrader-broker-context",
+      "runtime_mode": "paper_manual",
+      "priority": 5,
+      "max_retries": 1,
+      "depends_on": [
+        "altrader-augur-analyze-candidates"
+      ],
+      "desktop_status": "blocked",
+      "notes": [
+        "Coinmaster only owns fresh broker context."
+      ]
+    },
+    {
+      "id": "altrader-warden-risk-gate",
+      "title": "[AI-Trader][risk_review][risk_gate] Apply deterministic sizing and risk gates",
+      "description": "Run this stage deterministically from the repo root by executing exactly: python scripts/operations/run_altrader_stage.py --stage-id altrader-warden-risk-gate. This wrapper owns risk execution, Kanban completion or blocking, and safe no-action or failure handling for this stage. Do not improvise alternate tool names or ask follow-up questions.",
+      "assignee_profile": "warden",
+      "assigned_agent_id": "altrader-risk-gate",
+      "runtime_mode": "risk_review",
+      "priority": 6,
+      "max_retries": 1,
+      "depends_on": [
+        "altrader-coinmaster-broker-context"
+      ],
+      "desktop_status": "blocked",
+      "notes": [
+        "If Warden blocks or fails, no downstream trading task runs.",
+        "Failure notifications are expected to reach Bard channels."
+      ]
+    },
+    {
+      "id": "altrader-overlord-manual-approval",
+      "title": "[AI-Trader][paper_manual][manual_approval] Queue the candidate for human approval",
+      "description": "Run this stage deterministically from the repo root by executing exactly: python scripts/operations/run_altrader_stage.py --stage-id altrader-overlord-manual-approval. This wrapper owns the approval queue path, Kanban completion or blocking, and safe no-action or failure handling for this stage. Do not improvise alternate tool names or ask follow-up questions.",
+      "assignee_profile": "overlord",
+      "assigned_agent_id": "altrader-manual-approval",
+      "runtime_mode": "paper_manual",
+      "priority": 7,
+      "max_retries": 1,
+      "depends_on": [
+        "altrader-warden-risk-gate"
+      ],
+      "desktop_status": "blocked",
+      "notes": [
+        "Overlord only owns approval-queue operations."
+      ]
+    },
+    {
+      "id": "altrader-gatekeeper-paper-submission",
+      "title": "[AI-Trader][paper_manual][broker_submission] Submit the approved paper trade",
+      "description": "Run this stage deterministically from the repo root by executing exactly: python scripts/operations/run_altrader_stage.py --stage-id altrader-gatekeeper-paper-submission. This wrapper owns paper-order submission, Kanban completion or blocking, and safe no-action or failure handling for this stage. Do not improvise alternate tool names or ask follow-up questions.",
+      "assignee_profile": "gatekeeper",
+      "assigned_agent_id": "altrader-execution",
+      "runtime_mode": "paper_manual",
+      "priority": 8,
+      "max_retries": 1,
+      "depends_on": [
+        "altrader-overlord-manual-approval"
+      ],
+      "desktop_status": "blocked",
+      "notes": [
+        "Gatekeeper only owns broker submission."
+      ]
+    },
+    {
+      "id": "altrader-tracker-reconcile-positions",
+      "title": "[AI-Trader][paper_manual][order_reconciliation] Reconcile order and position state",
+      "description": "Run this stage deterministically from the repo root by executing exactly: python scripts/operations/run_altrader_stage.py --stage-id altrader-tracker-reconcile-positions. This wrapper owns reconciliation, Kanban completion or blocking, and safe no-action or failure handling for this stage. Do not improvise alternate tool names or ask follow-up questions.",
+      "assignee_profile": "tracker",
+      "assigned_agent_id": "altrader-order-position",
+      "runtime_mode": "paper_manual",
+      "priority": 9,
+      "max_retries": 1,
+      "depends_on": [
+        "altrader-gatekeeper-paper-submission"
+      ],
+      "desktop_status": "blocked",
+      "notes": [
+        "Tracker only owns monitoring and position state."
+      ]
+    },
+    {
+      "id": "altrader-bard-daily-summary",
+      "title": "[AI-Trader][daily_cycle][reporting] Write the daily summary and deliver notifications",
+      "description": "Run this stage deterministically from the repo root by executing exactly: python scripts/operations/run_altrader_stage.py --stage-id altrader-bard-daily-summary. This wrapper owns final reporting, Telegram and email delivery, Kanban completion or blocking, and safe no-action or failure handling for this stage. Do not improvise alternate tool names or ask follow-up questions.",
+      "assignee_profile": "bard",
+      "assigned_agent_id": "altrader-reporting",
+      "runtime_mode": "paper_manual",
+      "priority": 10,
+      "max_retries": 1,
+      "depends_on": [
+        "altrader-tracker-reconcile-positions"
+      ],
+      "desktop_status": "blocked",
+      "notes": [
+        "Bard owns final daily reporting and operator notifications.",
+        "If the normal path blocks before execution, High Marshal may assign Bard a separate incident-summary task."
+      ]
+    },
+    {
+      "id": "altrader-highmarshal-closeout",
+      "title": "[AI-Trader][paper_manual][orchestrator] Close the trading-day workflow",
+      "description": "Run this stage deterministically from the repo root by executing exactly: python scripts/operations/run_altrader_stage.py --stage-id altrader-highmarshal-closeout. This wrapper owns final closeout, Kanban completion or blocking, and safe no-action or failure handling for this stage. Do not create, decompose, or swarm new tasks during closeout. Do not ask follow-up questions.",
+      "assignee_profile": "highmarshal",
+      "assigned_agent_id": "altrader-94d7f6",
+      "runtime_mode": "paper_manual",
+      "priority": 11,
+      "max_retries": 1,
+      "depends_on": [
+        "altrader-bard-daily-summary"
+      ],
+      "desktop_status": "blocked",
+      "notes": [
+        "High Marshal closes the run after Bard completes the summary path."
+      ]
+    }
+  ]
+}

@@ -9,9 +9,9 @@ public sealed class TargetAssignmentRow : INotifyPropertyChanged
 {
     private bool _hermesBackend;
     private bool _hermesDesktop;
-    private bool _lmStudio;
     private bool _isPrimaryDesktop;
     private bool _isAuthoritativeBackend;
+    private string _aiProviderKey = string.Empty;
 
     public required string TargetId { get; init; }
     public required string DisplayName { get; init; }
@@ -29,12 +29,6 @@ public sealed class TargetAssignmentRow : INotifyPropertyChanged
         set => SetField(ref _hermesDesktop, value);
     }
 
-    public bool LmStudio
-    {
-        get => _lmStudio;
-        set => SetField(ref _lmStudio, value);
-    }
-
     public bool IsPrimaryDesktop
     {
         get => _isPrimaryDesktop;
@@ -46,6 +40,15 @@ public sealed class TargetAssignmentRow : INotifyPropertyChanged
         get => _isAuthoritativeBackend;
         set => SetField(ref _isAuthoritativeBackend, value);
     }
+
+    public string AiProviderKey
+    {
+        get => _aiProviderKey;
+        set => SetField(ref _aiProviderKey, value);
+    }
+
+    public IReadOnlyList<HermesProviderOption> AvailableAiProviders { get; } =
+        HermesProviderCatalog.All;
 
     public event PropertyChangedEventHandler? PropertyChanged;
 

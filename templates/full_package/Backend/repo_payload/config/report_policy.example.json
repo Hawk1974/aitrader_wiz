@@ -1,0 +1,13 @@
+{
+  "schema_version": "1.0.0",
+  "report_dir": "data/reports",
+  "manifest_dir": "data/reports/manifests",
+  "retention_days": 365,
+  "agentmail": {
+    "enabled": false,
+    "recipient_source": "USER_PRIMARY_EMAIL",
+    "send_daily_summary": false,
+    "send_exception_reports": true,
+    "redact_secrets": true
+  }
+}

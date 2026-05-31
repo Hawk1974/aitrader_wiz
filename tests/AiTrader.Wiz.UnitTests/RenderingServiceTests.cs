@@ -16,6 +16,10 @@ public sealed class RenderingServiceTests
         Assert.Contains("runtime_targets:", yaml, StringComparison.Ordinal);
         Assert.Contains("alpaca_paper:", yaml, StringComparison.Ordinal);
         Assert.Contains("cash_allocation_policy:", yaml, StringComparison.Ordinal);
+        Assert.Contains("hermes_ai_provider:", yaml, StringComparison.Ordinal);
+        Assert.Contains("docker_available:", yaml, StringComparison.Ordinal);
+        Assert.Contains("access_mode:", yaml, StringComparison.Ordinal);
+        Assert.Contains("service_placements:", yaml, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -38,6 +42,20 @@ public sealed class RenderingServiceTests
 
         Assert.Contains("paper mode only", markdown, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("GO LIVE", markdown, StringComparison.Ordinal);
+        Assert.Contains("Do not assume Docker unless", markdown, StringComparison.Ordinal);
+        Assert.Contains("full non-secret AlTrader stand-up package", markdown, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void RenderSetupAiExecutionRules_RequiresLoggingAndEscalationRules()
+    {
+        var state = BuildState();
+
+        var markdown = RenderingService.RenderSetupAiExecutionRules(state);
+
+        Assert.Contains("Log every meaningful action", markdown, StringComparison.Ordinal);
+        Assert.Contains("Known and solvable from this package", markdown, StringComparison.Ordinal);
+        Assert.Contains("STANDUP_EXECUTION_SUMMARY.md", markdown, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -52,9 +70,21 @@ public sealed class RenderingServiceTests
         Assert.Contains("Cash Allocation Policy", markdown, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public void RenderTargetStandup_ContainsAccessAndPlacementInstructions()
+    {
+        var state = BuildState();
+
+        var markdown = RenderingService.RenderTargetStandup(state, state.Targets.Single(target => target.IsAuthoritativeBackend), 1);
+
+        Assert.Contains("Preferred access mode is", markdown, StringComparison.Ordinal);
+        Assert.Contains("Follow Service Placement", markdown, StringComparison.Ordinal);
+        Assert.Contains("Telegram Integration", markdown, StringComparison.Ordinal);
+    }
+
     private static WizardState BuildState()
     {
-        return new WizardState
+        var state = new WizardState
         {
             ClientIdentity = new ClientIdentity
             {
@@ -65,8 +95,24 @@ public sealed class RenderingServiceTests
             },
             Computers =
             [
-                new ComputerDefinition { Id = "computer_1", Label = "Windows", OperatingSystem = OperatingSystemKind.Windows },
-                new ComputerDefinition { Id = "computer_2", Label = "Linux", OperatingSystem = OperatingSystemKind.Linux },
+                new ComputerDefinition
+                {
+                    Id = "computer_1",
+                    Label = "Windows",
+                    OperatingSystem = OperatingSystemKind.Windows,
+                    AccessMode = AccessMode.DirectLocal,
+                },
+                new ComputerDefinition
+                {
+                    Id = "computer_2",
+                    Label = "Linux",
+                    OperatingSystem = OperatingSystemKind.Linux,
+                    DockerAvailable = true,
+                    AccessMode = AccessMode.Ssh,
+                    AccessHostOrIp = "100.64.0.2",
+                    AccessUsername = "hawk",
+                    AccessPort = 22,
+                },
             ],
             Targets =
             [
@@ -76,7 +122,7 @@ public sealed class RenderingServiceTests
                     DisplayName = "Linux",
                     Kind = RuntimeTargetKind.Linux,
                     ComputerId = "computer_2",
-                    Roles = [RoleKind.HermesBackend, RoleKind.LmStudio],
+                    Roles = [RoleKind.HermesBackend],
                     IsAuthoritativeBackend = true,
                 },
                 new RuntimeTarget
@@ -88,7 +134,21 @@ public sealed class RenderingServiceTests
                     Roles = [RoleKind.HermesDesktop],
                     IsPrimaryDesktop = true,
                 }
-            ]
+            ],
+            HermesAiProvider = new HermesAiProviderConfiguration
+            {
+                ProviderKey = "openai",
+                BaseUrl = "https://api.openai.com/v1",
+                ModelName = "gpt-4.1",
+                ApiKey = "api-key",
+            },
+            Connectivity = new ConnectivityConfiguration
+            {
+                RequiresTailscale = true,
+            }
         };
+
+        TopologyService.ApplyDefaultDeploymentModel(state);
+        return state;
     }
 }
